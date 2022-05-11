@@ -1,0 +1,19 @@
+{
+  "name": "proxy",
+  "version": "1.0.0",
+  "main": "index.js",
+  "license": "MIT",
+  "scripts": {
+    "dev": "nodemon index.js",
+    "pm2": "pm2 startOrRestart ecosystem.config.js --env production"
+  },
+  "dependencies": {
+    "dotenv": "^16.0.1",
+    "pusher": "^5.1.0-beta",
+    "pusher-js": "^7.1.0-beta",
+    "redbird": "^0.10.0"
+  },
+  "devDependencies": {
+    "nodemon": "^2.0.16"
+  }
+}
