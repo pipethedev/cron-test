@@ -1,4 +1,5 @@
 const { pusher, pusherClient } = require("./config");
+const { sslWorker } = require("./worker/ssl");
 
 const proxy = require("redbird")({
   port: process.env.PROXY_PORT || 9999,
@@ -25,4 +26,8 @@ channel.bind("register", ({ domain, ip }) => {
 
 channel.bind("unregister", ({ domain }) => {
   proxy.unregister(domain);
+});
+
+channel.bind("ssl", ({ domain }) => {
+  sslWorker.add({ domain });
 });

@@ -1,6 +1,7 @@
 const Pusher = require("pusher");
 const PusherJs = require("pusher-js");
 const dotenv = require("dotenv");
+const Queue = require("bull");
 
 dotenv.config();
 
@@ -15,7 +16,17 @@ const pusherClient = new PusherJs(process.env.PUSHER_APP_KEY || "", {
   cluster: "eu",
 });
 
+const queue = (background_name) =>
+  new Queue(background_name, {
+    redis: {
+      host: process.env.REDIS_HOST || "localhost",
+      port: Number(process.env.REDIS_PORT) || 6379,
+      password: process.env.REDIS_PASSWORD || "",
+    },
+  });
+
 module.exports = {
   pusher,
   pusherClient,
+  queue,
 };
