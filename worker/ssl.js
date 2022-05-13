@@ -3,7 +3,7 @@ const { queue, pusher } = require("../config");
 
 const sslWorker = queue("ssl");
 
-sslWorker.process(async (job) => {
+sslWorker.process(async (job, done) => {
   const { domain } = job.data;
   const child = spawn("certbot", [
     "certonly",
@@ -20,14 +20,11 @@ sslWorker.process(async (job) => {
   child.stdout.on("data", (data) => {
     const output = data.toString();
 
-    // get Certificate is saved at:
-    // /etc/letsencrypt/live/example.com/cert.pem
-    // and Key is saved at:
-    // /etc/letsencrypt/live/example.com/privkey.pem
     if (output.includes("Certificate is saved at:")) {
-      // write to nginx
-      const cert = output.split("Certificate is saved at:")[1].trim();
-      const key = output.split("Key is saved at:")[1].trim();
+      const cert = output.match(
+        /\/etc\/letsencrypt\/live\/[^\/]+\/fullchain.pem/
+      );
+      const key = output.match(/\/etc\/letsencrypt\/live\/[^\/]+\/privkey.pem/);
 
       // append to nginx config
       const nginxConfig = `\n
@@ -35,8 +32,8 @@ sslWorker.process(async (job) => {
         listen 443 ssl http2;
         listen [::]:443 ssl http2;
         server_name ${domain};
-        ssl_certificate ${cert};
-        ssl_certificate_key ${key};
+        ssl_certificate ${cert[0]};
+        ssl_certificate_key ${key[0]};
         ssl_session_timeout 5m;
       
         location / {
@@ -62,20 +59,16 @@ sslWorker.process(async (job) => {
 
       // complete job with success message
       job.progress(100);
-      job.done({
+      done(null, {
         message: `SSL certificate for ${domain} has been generated`,
         domain,
       });
     }
   });
 
-  child.stderr.on("data", (data) => {
+  child.stderr.on("data", (data, done) => {
     // complete job with error message
-    job.progress(100);
-    job.fail({
-      message: data.toString(),
-      domain,
-    });
+    done(new Error(data.toString()));
   });
 });
 
@@ -89,7 +82,7 @@ sslWorker.on("completed", (job, payload) => {
 sslWorker.on("failed", (job, err) => {
   pusher.trigger("domain", "error", {
     message: err.message,
-    domain: err.domain,
+    domain: job.data.domain,
   });
 });
 
