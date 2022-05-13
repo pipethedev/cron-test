@@ -30,7 +30,7 @@ sslWorker.process(async (job) => {
       const key = output.split("Key is saved at:")[1].trim();
 
       // append to nginx config
-      const nginxConfig = `
+      const nginxConfig = `\n
       server {
         listen 443 ssl http2;
         listen [::]:443 ssl http2;
@@ -55,7 +55,7 @@ sslWorker.process(async (job) => {
       const nginxPath = "/etc/nginx/sites-enabled/bookily.xyz";
 
       // append to nginx config
-      require("fs").writeFileSync(nginxPath, nginxConfig);
+      require("fs").appendFileSync(nginxPath, nginxConfig);
 
       // reload nginx
       require("child_process").execSync("systemctl reload nginx");
