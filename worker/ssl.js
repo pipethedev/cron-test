@@ -5,7 +5,25 @@ const sslWorker = queue("ssl");
 
 sslWorker.process(async (job, done) => {
   const { domain } = job.data;
-  const child = spawn("certbot", [
+
+  // check if domain already has ssl using letsencrypt and certbot
+  const check = spawn("certbot", ["certificates"]);
+
+  check.stdout.on("data", (data) => {
+    if (data.includes(domain)) {
+      done(null, {
+        status: "success",
+        message: `${domain} already has ssl`,
+      });
+    }
+  });
+
+  check.stderr.on("data", (data) => {
+    done(new Error(`Error checking for ssl for ${domain}: ${data.toString()}`));
+  });
+
+  // if not, create ssl using letsencrypt and certbot
+  const generate = spawn("certbot", [
     "certonly",
     "--nginx",
     "-d",
@@ -17,7 +35,7 @@ sslWorker.process(async (job, done) => {
     "--force-renewal",
   ]);
 
-  child.stdout.on("data", (data) => {
+  generate.stdout.on("data", (data) => {
     const output = data.toString();
 
     if (output.includes("Certificate is saved at:")) {
@@ -66,7 +84,7 @@ sslWorker.process(async (job, done) => {
     }
   });
 
-  child.stderr.on("data", (data, done) => {
+  generate.stderr.on("data", (data, done) => {
     // complete job with error message
     done(new Error(data.toString()));
   });
