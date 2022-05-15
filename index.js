@@ -1,27 +1,13 @@
-const { pusher, pusherClient } = require("./config");
+const { pusherClient, proxy } = require("./config");
+const { connectToMongo } = require("./db");
 const { sslWorker } = require("./worker/ssl");
-
-const proxy = require("redbird")({
-  port: process.env.PROXY_PORT || 9999,
-  silent: true,
-});
 
 const channel = pusherClient.subscribe("domain");
 
+connectToMongo(process.env.MONGODB_URI || "");
+
 channel.bind("register", ({ domain, ip }) => {
-  try {
-    proxy.register(domain, ip);
-    setTimeout(() => {
-      pusher.trigger("domain", "success", {
-        message: "Proxy server started",
-        domain: `${
-          process.env.NODE_ENV !== "production" ? "http" : "https"
-        }://${domain}`,
-      });
-    }, 2000);
-  } catch (err) {
-    console.error(err);
-  }
+  proxy(domain, ip);
 });
 
 channel.bind("unregister", ({ domain }) => {

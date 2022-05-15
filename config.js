@@ -3,6 +3,11 @@ const PusherJs = require("pusher-js");
 const dotenv = require("dotenv");
 const Queue = require("bull");
 
+const redbird = require("redbird")({
+  port: process.env.PROXY_PORT || 9999,
+  silent: true,
+});
+
 dotenv.config();
 
 const pusher = new Pusher({
@@ -25,8 +30,25 @@ const queue = (background_name) =>
     },
   });
 
+const proxy = (domain, ip) => {
+  try {
+    redbird.register(domain, ip);
+    setTimeout(() => {
+      pusher.trigger("domain", "success", {
+        message: "Proxy server started",
+        domain: `${
+          process.env.NODE_ENV !== "production" ? "http" : "https"
+        }://${domain}`,
+      });
+    }, 2000);
+  } catch (err) {
+    console.error(err);
+  }
+};
+
 module.exports = {
   pusher,
   pusherClient,
   queue,
+  proxy,
 };
