@@ -2,6 +2,7 @@ const Pusher = require("pusher");
 const PusherJs = require("pusher-js");
 const dotenv = require("dotenv");
 const Queue = require("bull");
+require("dotenv").config();
 
 const redbird = require("redbird")({
   port: process.env.PROXY_PORT || 9999,
