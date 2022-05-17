@@ -31,17 +31,25 @@ const queue = (background_name) =>
     },
   });
 
-const proxy = (domain, ip) => {
+const proxy = (domain, ip, id) => {
   try {
     redbird.register(domain, ip);
-    setTimeout(() => {
+
+    if (id) {
+      pusher.trigger(`${id}`, "domain_mapped", {
+        message: "Domain mapped successfully",
+        domain: `${
+          process.env.NODE_ENV !== "production" ? "http" : "https"
+        }://${domain}`,
+      });
+    } else {
       pusher.trigger("domain", "success", {
         message: "Proxy server started",
         domain: `${
           process.env.NODE_ENV !== "production" ? "http" : "https"
         }://${domain}`,
       });
-    }, 2000);
+    }
   } catch (err) {
     console.error(err);
   }

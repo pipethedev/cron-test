@@ -6,8 +6,8 @@ const channel = pusherClient.subscribe("domain");
 
 connectToMongo(process.env.MONGODB_URI || "");
 
-channel.bind("register", ({ domain, ip }) => {
-  proxy(domain, ip);
+channel.bind("register", ({ domain, ip, id }) => {
+  proxy(domain, ip, id);
 });
 
 channel.bind("unregister", ({ domain }) => {
