@@ -31,28 +31,36 @@ const queue = (background_name) =>
     },
   });
 
-const proxy = (domain, ip, id) => {
-  try {
-    redbird.register(domain, ip);
+const proxy = {
+  // create a register function to register the domain with the proxy
+  register(domain, ip, id) {
+    try {
+      redbird.register(domain, ip);
 
-    if (id) {
-      pusher.trigger(`${id}`, "domain_mapped", {
-        message: "Domain mapped successfully",
-        domain: `${
-          process.env.NODE_ENV !== "production" ? "http" : "https"
-        }://${domain}`,
-      });
-    } else {
-      pusher.trigger("domain", "success", {
-        message: "Proxy server started",
-        domain: `${
-          process.env.NODE_ENV !== "production" ? "http" : "https"
-        }://${domain}`,
-      });
+      if (id) {
+        pusher.trigger(`${id}`, "domain_mapped", {
+          message: "Domain mapped successfully",
+          domain: `${
+            process.env.NODE_ENV !== "production" ? "http" : "https"
+          }://${domain}`,
+        });
+      } else {
+        pusher.trigger("domain", "success", {
+          message: "Proxy server started",
+          domain: `${
+            process.env.NODE_ENV !== "production" ? "http" : "https"
+          }://${domain}`,
+        });
+      }
+    } catch (err) {
+      console.error(err);
     }
-  } catch (err) {
-    console.error(err);
-  }
+  },
+
+  // create an unregister function to unregister the domain with the proxy
+  unregister(domain) {
+    redbird.unregister(domain);
+  },
 };
 
 module.exports = {
