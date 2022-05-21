@@ -38,19 +38,27 @@ const proxy = {
       redbird.register(domain, ip);
 
       if (id) {
-        pusher.trigger(`${id}`, "domain_mapped", {
-          message: "Domain mapped successfully",
-          domain: `${
-            process.env.NODE_ENV !== "production" ? "http" : "https"
-          }://${domain}`,
-        });
+        pusher
+          .trigger(`${id}`, "domain_mapped", {
+            message: "Domain mapped successfully",
+            domain: `${
+              process.env.NODE_ENV !== "production" ? "http" : "https"
+            }://${domain}`,
+          })
+          .catch((error) => {
+            console.log(error);
+          });
       } else {
-        pusher.trigger("domain", "success", {
-          message: "Proxy server started",
-          domain: `${
-            process.env.NODE_ENV !== "production" ? "http" : "https"
-          }://${domain}`,
-        });
+        pusher
+          .trigger("domain", "success", {
+            message: "Proxy server started",
+            domain: `${
+              process.env.NODE_ENV !== "production" ? "http" : "https"
+            }://${domain}`,
+          })
+          .catch((error) => {
+            console.log(error);
+          });
       }
     } catch (err) {
       console.error(err);
