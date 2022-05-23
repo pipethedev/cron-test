@@ -49,16 +49,18 @@ const proxy = {
             console.log(error);
           });
       } else {
-        pusher
-          .trigger("domain", "success", {
-            message: "Proxy server started",
-            domain: `${
-              process.env.NODE_ENV !== "production" ? "http" : "https"
-            }://${domain}`,
-          })
-          .catch((error) => {
-            console.log(error);
-          });
+        setTimeout(() => {
+          pusher
+            .trigger("domain", "success", {
+              message: "Proxy server started",
+              domain: `${
+                process.env.NODE_ENV !== "production" ? "http" : "https"
+              }://${domain}`,
+            })
+            .catch((error) => {
+              console.log(error);
+            });
+        }, 2000);
       }
     } catch (err) {
       console.error(err);
@@ -72,8 +74,14 @@ const proxy = {
 
   changeDefault() {
     redbird.notFound((req, res) => {
-      res.statusCode = 200;
-      res.end(`Hello from Brimble Proxy!`);
+      console.log("Redirecting to default domain");
+      proxy.register(req.headers.host, process.env.SERVER_HOST);
+      res.writeHead(302, {
+        Location: `${
+          process.env.NODE_ENV !== "production" ? "http" : "https"
+        }://${req.headers.host}`,
+      });
+      res.end();
     });
   },
 };
