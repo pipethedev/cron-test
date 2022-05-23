@@ -69,6 +69,13 @@ const proxy = {
   unregister(domain) {
     redbird.unregister(domain);
   },
+
+  changeDefault() {
+    redbird.notFound((req, res) => {
+      res.statusCode = 200;
+      res.end(`Hello from Brimble Proxy!`);
+    });
+  },
 };
 
 module.exports = {
