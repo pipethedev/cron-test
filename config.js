@@ -74,14 +74,8 @@ const proxy = {
 
   changeDefault() {
     redbird.notFound((req, res) => {
-      console.log("Redirecting to default domain");
-      proxy.register(req.headers.host, process.env.SERVER_HOST);
-      res.writeHead(302, {
-        Location: `${
-          process.env.NODE_ENV !== "production" ? "http" : "https"
-        }://${req.headers.host}`,
-      });
-      res.end();
+      res.statusCode = 200;
+      res.end(`Hello from Brimble Proxy!`);
     });
   },
 };
