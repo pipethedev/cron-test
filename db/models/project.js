@@ -5,9 +5,17 @@ const projectSchema = new Schema({
     required: true,
     unique: true,
   },
-  domain: {
-    type: String,
+  uuid: {
+    type: Number,
+    required: true,
+    unique: true,
   },
+  domains: [
+    {
+      ref: "Domain",
+      type: Schema.Types.ObjectId,
+    },
+  ],
   pid: {
     type: Number,
   },

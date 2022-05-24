@@ -1,4 +1,4 @@
-const { Project } = require("./models");
+const { Project, Domain } = require("./models");
 const mongoose = require("mongoose");
 const { syncDomain } = require("../worker/sync");
 
@@ -9,10 +9,12 @@ const connectToMongo = (mongoUrl) => {
   mongoose.connect(mongoUrl, options);
   mongoose.connection.on("connected", async () => {
     console.log("Connected to MongoDB");
-    const projects = await Project.find({});
+    const projects = await Project.find({}).populate("domains");
 
-    projects.forEach(({ domain, port }) => {
-      syncDomain.add({ domain, port });
+    projects.forEach(({ domains, port }) => {
+      domains.forEach((domain) => {
+        syncDomain.add({ domain: domain.name, port });
+      });
     });
   });
   mongoose.connection.on("error", () => {
