@@ -25,4 +25,5 @@ const connectToMongo = (mongoUrl) => {
 module.exports = {
   connectToMongo,
   Project,
+  Domain,
 };

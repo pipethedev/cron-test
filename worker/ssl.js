@@ -26,6 +26,16 @@ sslWorker.process(async (job, done) => {
     done(new Error(`Error checking for ssl for ${domain}: ${data.toString()}`));
   });
 
+  check.on("close", (code) => {
+    if (code !== 0) {
+      done(new Error(`Error checking for ssl for ${domain}: ${code}`));
+    }
+  });
+
+  check.on("error", (error) => {
+    done(new Error(`Error checking for ssl for ${domain}: ${error}`));
+  });
+
   // if not, create ssl using letsencrypt and certbot
   const generate = spawn("certbot", [
     "certonly",
@@ -94,9 +104,19 @@ sslWorker.process(async (job, done) => {
     }
   });
 
-  generate.stderr.on("data", (data, done) => {
+  generate.stderr.on("data", (data) => {
     // complete job with error message
     done(new Error(data.toString()));
+  });
+
+  generate.on("close", (code) => {
+    if (code !== 0) {
+      done(new Error(`Error generating ssl for ${domain}: ${code}`));
+    }
+  });
+
+  generate.on("error", (error) => {
+    done(new Error(`Error generating ssl for ${domain}: ${error}`));
   });
 });
 

@@ -1,6 +1,6 @@
 const { pusherClient, proxy } = require("./config");
 const { connectToMongo } = require("./db");
-const { syncDomain } = require("./worker/sync");
+const { sslWorker, syncDomain } = require("./worker");
 
 const channel = pusherClient.subscribe("domain");
 
