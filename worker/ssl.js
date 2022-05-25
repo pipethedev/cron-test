@@ -6,7 +6,7 @@ const sslWorker = queue("ssl");
 sslWorker.process(async (job, done) => {
   const { domain } = job.data;
   let subdomain = "";
-  if (!domain.includes("www.")) {
+  if (domain.split(".").length === 2) {
     subdomain = `www.${domain}`;
   }
 
@@ -15,26 +15,41 @@ sslWorker.process(async (job, done) => {
 
   check.stdout.on("data", (data) => {
     const output = data.toString();
-    if (output.includes(domain) || output.includes(subdomain)) {
+    if (output.includes(domain)) {
       done(null, {
         status: "success",
         message: `${domain} already has ssl`,
       });
     }
 
-    const generate = spawn("certbot", [
-      "certonly",
-      "--nginx",
-      "-d",
-      domain,
-      subdomain ? "-d" : "",
-      subdomain ? subdomain : "",
-      "--agree-tos",
-      "--non-interactive",
-      "--text",
-      "--no-eff-email",
-      "--force-renewal",
-    ]);
+    const generate = spawn(
+      "certbot",
+      !subdomain
+        ? [
+            "certonly",
+            "--nginx",
+            "-d",
+            domain,
+            "--agree-tos",
+            "--non-interactive",
+            "--text",
+            "--no-eff-email",
+            "--force-renewal",
+          ]
+        : [
+            "certonly",
+            "--nginx",
+            "-d",
+            domain,
+            "-d",
+            subdomain,
+            "--agree-tos",
+            "--non-interactive",
+            "--text",
+            "--no-eff-email",
+            "--force-renewal",
+          ]
+    );
 
     generate.stdout.on("data", (data) => {
       const output = data.toString();
@@ -86,6 +101,11 @@ sslWorker.process(async (job, done) => {
           domain,
         });
       }
+    });
+
+    generate.stderr.on("data", (data) => {
+      const output = data.toString();
+      console.log(output);
     });
 
     generate.on("close", (code) => {
