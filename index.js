@@ -21,6 +21,6 @@ channel.bind("unregister", ({ domain }) => {
   proxy.unregister(domain);
 });
 
-channel.bind("ssl", ({ domain }) => {
-  sslWorker.add({ domain });
+channel.bind("ssl", ({ domain, id }) => {
+  sslWorker.add({ domain, id });
 });
