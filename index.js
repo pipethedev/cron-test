@@ -1,6 +1,6 @@
 const { pusherClient, proxy } = require("./config");
 const { connectToMongo } = require("./db");
-const { sslWorker, syncDomain } = require("./worker");
+const { syncDomain } = require("./worker");
 
 const channel = pusherClient.subscribe("domain");
 
@@ -20,9 +20,3 @@ channel.bind("register", ({ domain, ip, id }) => {
 channel.bind("unregister", ({ domain }) => {
   proxy.unregister(domain);
 });
-
-if (process.env.LOAD_BALANCER) {
-  channel.bind("ssl", ({ domain, id }) => {
-    sslWorker.add({ domain, id });
-  });
-}
