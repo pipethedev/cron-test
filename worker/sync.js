@@ -10,10 +10,9 @@ projectSync.process(async (job, done) => {
   projects.forEach(({ domains, port, dir, outputDirectory }) => {
     domains.forEach(async (domain) => {
       const urlString = `http://127.0.0.1:${port}`;
-      console.log(urlString);
 
       if (!dir || !outputDirectory) {
-        return done(new Error(`${domain.name} is properly configured`));
+        return done(new Error(`${domain.name} is not properly configured`));
       }
 
       try {
@@ -43,7 +42,7 @@ projectSync.on("failed", (job, err) => {
 const keepInSync = async ({ project }) => {
   if (project) {
     const { interval } = project;
-    projectSync.add({}, { repeat: { cron: interval || "*/5 * * * *" } });
+    projectSync.add({}, { repeat: { cron: interval || "*/1 * * * *" } });
   }
 };
 module.exports = {

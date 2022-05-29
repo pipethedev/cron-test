@@ -12,12 +12,12 @@ const connectToMongo = (mongoUrl) => {
     console.log("Connected to MongoDB");
     const projects = await Project.find({}).populate("domains");
 
-    projects.forEach(({ domains, port }) => {
+    projects.forEach(({ domains, port, uuid }) => {
       domains.forEach((domain) => {
-        proxy.register(domain, `http://127.0.0.1:${port}`, {});
+        proxy.register(domain, `http://127.0.0.1:${port}`, { id: uuid });
       });
     });
-    keepInSync({ project: { interval: "*/5 * * * *" } });
+    keepInSync({ project: { interval: "*/1 * * * *" } });
   });
   mongoose.connection.on("error", () => {
     console.error(`Error connecting to DB`, error);
