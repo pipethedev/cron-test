@@ -1,5 +1,7 @@
 const mongoose = require("mongoose");
+const { Project } = require("./models");
 const { keepInSync } = require("../worker");
+const { proxy } = require("../config");
 
 // Connection to Mongo
 const connectToMongo = (mongoUrl) => {
@@ -8,6 +10,13 @@ const connectToMongo = (mongoUrl) => {
   mongoose.connect(mongoUrl, options);
   mongoose.connection.on("connected", async () => {
     console.log("Connected to MongoDB");
+    const projects = await Project.find({}).populate("domains");
+
+    projects.forEach(({ domains, port }) => {
+      domains.forEach((domain) => {
+        proxy.register(domain, `http://127.0.0.1:${port}`, {});
+      });
+    });
     keepInSync({ project: { interval: "*/5 * * * *" } });
   });
   mongoose.connection.on("error", () => {
