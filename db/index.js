@@ -1,6 +1,6 @@
 const { Project, Domain } = require("./models");
 const mongoose = require("mongoose");
-const { syncDomain } = require("../worker/sync");
+const { keepInSync } = require("../worker");
 
 // Connection to Mongo
 const connectToMongo = (mongoUrl) => {
@@ -12,10 +12,7 @@ const connectToMongo = (mongoUrl) => {
 
     projects.forEach(({ domains, port, dir, outputDirectory }) => {
       domains.forEach((domain) => {
-        syncDomain.add(
-          { domain: domain.name, port, dir, outputDirectory },
-          { repeat: { cron: "*/5 * * * *" } }
-        );
+        keepInSync({ domain: domain.name, port, dir, outputDirectory });
       });
     });
   });

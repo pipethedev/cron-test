@@ -1,5 +1,5 @@
-const { syncDomain } = require("./sync");
+const { keepInSync } = require("./sync");
 
 module.exports = {
-  syncDomain,
+  keepInSync,
 };

@@ -33,26 +33,15 @@ const queue = (background_name) =>
 
 const proxy = {
   // create a register function to register the domain with the proxy
-  register(domain, ip, id) {
+  register(domain, ip, { id, isWatchMode }) {
     try {
       redbird.register(domain, ip);
 
-      if (id) {
-        pusher
-          .trigger(`${id}`, "domain_mapped", {
-            message: "Domain mapped successfully",
-            domain: `${
-              process.env.NODE_ENV !== "production" ? "http" : "https"
-            }://${domain}`,
-          })
-          .catch((error) => {
-            console.log(error);
-          });
-      } else {
-        setTimeout(() => {
+      if (!isWatchMode) {
+        if (id) {
           pusher
-            .trigger("domain", "success", {
-              message: "Proxy server started",
+            .trigger(`${id}`, "domain_mapped", {
+              message: "Domain mapped successfully",
               domain: `${
                 process.env.NODE_ENV !== "production" ? "http" : "https"
               }://${domain}`,
@@ -60,7 +49,20 @@ const proxy = {
             .catch((error) => {
               console.log(error);
             });
-        }, 2000);
+        } else {
+          setTimeout(() => {
+            pusher
+              .trigger("domain", "success", {
+                message: "Proxy server started",
+                domain: `${
+                  process.env.NODE_ENV !== "production" ? "http" : "https"
+                }://${domain}`,
+              })
+              .catch((error) => {
+                console.log(error);
+              });
+          }, 2000);
+        }
       }
     } catch (err) {
       console.error(err);
