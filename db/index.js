@@ -8,12 +8,14 @@ const connectToMongo = (mongoUrl) => {
 
   mongoose.connect(mongoUrl, options);
   mongoose.connection.on("connected", async () => {
-    console.log("Connected to MongoDB");
     const projects = await Project.find({}).populate("domains");
 
-    projects.forEach(({ domains, port }) => {
+    projects.forEach(({ domains, port, dir, outputDirectory }) => {
       domains.forEach((domain) => {
-        syncDomain.add({ domain: domain.name, port });
+        syncDomain.add(
+          { domain: domain.name, port, dir, outputDirectory },
+          { repeat: { cron: "*/5 * * * *" } }
+        );
       });
     });
   });

@@ -22,6 +22,15 @@ const projectSchema = new Schema({
   port: {
     type: Number,
   },
+  dir: {
+    type: String,
+  },
+  buildCommand: {
+    type: String,
+  },
+  outputDirectory: {
+    type: String,
+  },
 });
 
 module.exports = model("Project", projectSchema);
