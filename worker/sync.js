@@ -1,4 +1,5 @@
 const fetch = require("node-fetch");
+const fs = require("fs");
 const { queue, proxy } = require("../config");
 const { Project } = require("../db/models");
 
@@ -13,6 +14,11 @@ projectSync.process(async (job, done) => {
 
       if (!dir || !outputDirectory) {
         return done(new Error(`${name} is not properly configured`));
+      }
+
+      // check if dir exists
+      if (!fs.existsSync(dir)) {
+        return done(new Error(`${dir} does not exist`));
       }
 
       try {
