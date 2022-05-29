@@ -7,34 +7,44 @@ const projectSync = queue("project_sync");
 
 projectSync.process(async (job, done) => {
   const projects = await Project.find({}).populate("domains");
+  const errors = [];
+  const success = [];
 
   projects.forEach(({ domains, port, dir, outputDirectory }) => {
     domains.forEach(async ({ name }) => {
       const urlString = `http://127.0.0.1:${port}`;
 
       if (!dir || !outputDirectory) {
-        done(new Error(`${name} is not properly configured`));
+        errors.push(`${name} is not properly configured`);
       } else if (!fs.existsSync(dir)) {
-        done(new Error(`${dir} does not exist`));
+        errors.push(`${dir} does not exist`);
       } else {
         try {
           await fetch(urlString);
 
           proxy.register(name, urlString, { isWatchMode: true });
 
-          done(null, `${name} is properly configured`);
+          success.push(`${name} is properly configured`);
         } catch (error) {
           try {
             require("child_process").execSync(
               `brimble dev ${dir} -so -p ${port} --output-directory ${outputDirectory}`
             );
           } catch (error) {
-            done(new Error(error.message));
+            errors.push(`${name} couldn't start | ${error.message}`);
           }
         }
       }
     });
   });
+
+  if (errors.length) {
+    done(new Error(errors.join("\n")));
+  }
+
+  if (success.length) {
+    done(null, success.join("\n"));
+  }
 });
 
 projectSync.on("completed", (job, result) => {
@@ -48,7 +58,7 @@ projectSync.on("failed", (job, err) => {
 const keepInSync = async ({ project }) => {
   if (project) {
     const { interval } = project;
-    projectSync.add({}, { repeat: { cron: interval || "*/1 * * * *" } });
+    projectSync.add({});
   }
 };
 module.exports = {
