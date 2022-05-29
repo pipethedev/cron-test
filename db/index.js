@@ -13,8 +13,8 @@ const connectToMongo = (mongoUrl) => {
     const projects = await Project.find({}).populate("domains");
 
     projects.forEach(({ domains, port, uuid }) => {
-      domains.forEach((domain) => {
-        proxy.register(domain, `http://127.0.0.1:${port}`, { id: uuid });
+      domains.forEach(({ name }) => {
+        proxy.register(name, `http://127.0.0.1:${port}`, { id: uuid });
       });
     });
     keepInSync({ project: { interval: "*/1 * * * *" } });

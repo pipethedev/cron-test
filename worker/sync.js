@@ -8,19 +8,19 @@ projectSync.process(async (job, done) => {
   const projects = await Project.find({}).populate("domains");
 
   projects.forEach(({ domains, port, dir, outputDirectory }) => {
-    domains.forEach(async (domain) => {
+    domains.forEach(async ({ name }) => {
       const urlString = `http://127.0.0.1:${port}`;
 
       if (!dir || !outputDirectory) {
-        return done(new Error(`${domain.name} is not properly configured`));
+        return done(new Error(`${name} is not properly configured`));
       }
 
       try {
         await fetch(urlString);
 
-        proxy.register(domain, urlString, { isWatchMode: true });
+        proxy.register(name, urlString, { isWatchMode: true });
 
-        done(null, `${domain.name} is properly configured`);
+        done(null, `${name} is properly configured`);
       } catch (error) {
         require("child_process").execSync(
           `brimble dev ${dir} -so -p ${port} --output-directory ${outputDirectory}`
