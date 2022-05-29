@@ -13,25 +13,25 @@ projectSync.process(async (job, done) => {
       const urlString = `http://127.0.0.1:${port}`;
 
       if (!dir || !outputDirectory) {
-        return done(new Error(`${name} is not properly configured`));
-      }
+        done(new Error(`${name} is not properly configured`));
+      } else if (!fs.existsSync(dir)) {
+        done(new Error(`${dir} does not exist`));
+      } else {
+        try {
+          await fetch(urlString);
 
-      // check if dir exists
-      if (!fs.existsSync(dir)) {
-        return done(new Error(`${dir} does not exist`));
-      }
+          proxy.register(name, urlString, { isWatchMode: true });
 
-      try {
-        await fetch(urlString);
-
-        proxy.register(name, urlString, { isWatchMode: true });
-
-        done(null, `${name} is properly configured`);
-      } catch (error) {
-        require("child_process").execSync(
-          `brimble dev ${dir} -so -p ${port} --output-directory ${outputDirectory}`
-        );
-        done(new Error(error.message));
+          done(null, `${name} is properly configured`);
+        } catch (error) {
+          try {
+            require("child_process").execSync(
+              `brimble dev ${dir} -so -p ${port} --output-directory ${outputDirectory}`
+            );
+          } catch (error) {
+            done(new Error(error.message));
+          }
+        }
       }
     });
   });
