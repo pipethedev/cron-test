@@ -40,7 +40,7 @@ const proxy = {
       if (!isWatchMode) {
         if (id) {
           pusher
-            .trigger(`${id}`, "domain_mapped", {
+            .trigger(`private-${id}`, "domain_mapped", {
               message: "Domain mapped successfully",
               domain: `${
                 process.env.NODE_ENV !== "production" ? "http" : "https"
