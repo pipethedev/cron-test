@@ -1,4 +1,3 @@
-const { Project, Domain } = require("./models");
 const mongoose = require("mongoose");
 const { keepInSync } = require("../worker");
 
@@ -8,21 +7,12 @@ const connectToMongo = (mongoUrl) => {
 
   mongoose.connect(mongoUrl, options);
   mongoose.connection.on("connected", async () => {
-    const projects = await Project.find({}).populate("domains");
-
-    projects.forEach(({ domains, port, dir, outputDirectory }) => {
-      domains.forEach((domain) => {
-        keepInSync({ domain: domain.name, port, dir, outputDirectory });
-      });
-    });
+    console.log("Connected to MongoDB");
+    keepInSync({ project: { interval: "*/5 * * * *" } });
   });
   mongoose.connection.on("error", () => {
     console.error(`Error connecting to DB`, error);
   });
 };
 
-module.exports = {
-  connectToMongo,
-  Project,
-  Domain,
-};
+module.exports = { connectToMongo };

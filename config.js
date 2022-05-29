@@ -76,8 +76,11 @@ const proxy = {
 
   changeDefault() {
     redbird.notFound((req, res) => {
-      res.statusCode = 200;
-      res.end(`Hello from Brimble Proxy!`);
+      // TODO: Create Brimble 404 page
+      const host = req.headers.host;
+      const requestId = req.headers["x-brimble-id"];
+      res.statusCode = 404;
+      res.end(`Deployment not found for ${host}`);
     });
   },
 };

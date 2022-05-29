@@ -1,46 +1,50 @@
 const fetch = require("node-fetch");
 const { queue, proxy } = require("../config");
+const { Project } = require("../db/models");
 
-const syncDomain = queue("domain_sync");
+const projectSync = queue("project_sync");
 
-syncDomain.process(async (job, done) => {
-  const { domain, port, dir, outputDirectory, isMain } = job.data;
-  const urlString = `http://127.0.0.1:${port}`;
+projectSync.process(async (job, done) => {
+  const projects = await Project.find({}).populate("domains");
 
-  if (isMain) {
-    proxy.register(domain, urlString, {});
-    done();
-  } else {
-    if (!dir || !outputDirectory) {
-      return done(new Error("Missing required data"));
-    }
+  projects.forEach(({ domains, port, dir, outputDirectory }) => {
+    domains.forEach(async (domain) => {
+      const urlString = `http://127.0.0.1:${port}`;
+      console.log(urlString);
 
-    try {
-      await fetch(urlString);
+      if (!dir || !outputDirectory) {
+        return done(new Error(`${domain.name} is properly configured`));
+      }
 
-      proxy.register(domain, urlString, { isWatchMode: true });
-    } catch (error) {
-      require("child_process").execSync(
-        `brimble dev ${dir} -so -p ${port} --output-directory ${outputDirectory}`
-      );
-      done(new Error(error.message));
-    }
+      try {
+        await fetch(urlString);
+
+        proxy.register(domain, urlString, { isWatchMode: true });
+
+        done(null, `${domain.name} is properly configured`);
+      } catch (error) {
+        require("child_process").execSync(
+          `brimble dev ${dir} -so -p ${port} --output-directory ${outputDirectory}`
+        );
+        done(new Error(error.message));
+      }
+    });
+  });
+});
+
+projectSync.on("completed", (job, result) => {
+  console.log(`${job.id} completed with result: ${result}`);
+});
+
+projectSync.on("failed", (job, err) => {
+  console.log(`${err.message}`);
+});
+
+const keepInSync = async ({ project }) => {
+  if (project) {
+    const { interval } = project;
+    projectSync.add({}, { repeat: { cron: interval || "*/5 * * * *" } });
   }
-});
-
-syncDomain.on("completed", (job, result) => {
-  console.log(`${job.data.domain} is available`);
-});
-
-syncDomain.on("failed", (job, err) => {
-  console.log(`${job.data.domain} is not available: REASON — ${err.message}`);
-});
-
-const keepInSync = async ({ domain, port, dir, outputDirectory, isMain }) => {
-  syncDomain.add(
-    { domain, port, dir, outputDirectory, isMain },
-    !isMain ? { repeat: { cron: "*/5 * * * *" } } : {}
-  );
 };
 module.exports = {
   keepInSync,
