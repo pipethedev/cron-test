@@ -16,10 +16,14 @@ const pusher = new Pusher({
   key: process.env.PUSHER_APP_KEY || "",
   secret: process.env.PUSHER_APP_SECRET || "",
   cluster: process.env.PUSHER_APP_CLUSTER || "eu",
+  useTLS: true,
 });
 
 const pusherClient = new PusherJs(process.env.PUSHER_APP_KEY || "", {
   cluster: "eu",
+  channelAuthorization: {
+    endpoint: `http://127.0.0.1:${process.env.PORT || 5000}/pusher/auth`,
+  },
 });
 
 const queue = (background_name) =>
@@ -47,7 +51,7 @@ const proxy = {
               }://${domain}`,
             })
             .catch((error) => {
-              console.log(error);
+              console.log(error.message);
             });
         } else {
           setTimeout(() => {
@@ -59,7 +63,7 @@ const proxy = {
                 }://${domain}`,
               })
               .catch((error) => {
-                console.log(error);
+                console.log(error.message);
               });
           }, 2000);
         }
