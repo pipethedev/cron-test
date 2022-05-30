@@ -30,6 +30,7 @@ projectSync.process(async (job, done) => {
             require("child_process").exec(
               `brimble dev ${dir} -so -p ${port} --output-directory ${outputDirectory}`
             );
+            success.push(`${name} has been properly configured`);
           } catch (error) {
             errors.push(`${name} couldn't start | ${error.message}`);
           }
