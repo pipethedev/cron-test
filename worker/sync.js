@@ -58,7 +58,7 @@ projectSync.on("failed", (job, err) => {
 const keepInSync = async ({ project }) => {
   if (project) {
     const { interval } = project;
-    projectSync.add({});
+    projectSync.add({}, { repeat: { cron: interval || "*/1 * * * *" } });
   }
 };
 module.exports = {
