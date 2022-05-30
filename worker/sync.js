@@ -8,7 +8,8 @@ const projectSync = queue("project_sync");
 projectSync.process(async () => {
   const projects = await Project.find({}).populate("domains");
 
-  projects.forEach(({ domains, port, dir, outputDirectory }) => {
+  projects.forEach((project) => {
+    const { domains, port, dir, outputDirectory, uuid } = project;
     domains.forEach(async ({ name }) => {
       const urlString = `http://127.0.0.1:${port}`;
 
@@ -25,10 +26,19 @@ projectSync.process(async () => {
           console.log(`${name} is properly configured`);
         } catch (error) {
           try {
-            require("child_process").exec(
-              `brimble dev ${dir} -so -p ${port} --output-directory ${outputDirectory}`
+            const uptimeLog = path.join(
+              process.env.PROJECT_PATH || "",
+              `projects/${uuid}/uptime.log`
             );
-            console.log(`${name} has been properly configured`);
+            const start = require("child_process").exec(
+              `nohup brimble dev ${dir} -so -p ${port} --output-directory ${outputDirectory} > ${uptimeLog} 2>&1 &`
+            );
+
+            start.on("exit", async () => {
+              project.pid = start.pid;
+              await project.save();
+              console.log(`${name} is now running`);
+            });
           } catch (error) {
             console.log(`${name} couldn't start | ${error.message}`);
           }
