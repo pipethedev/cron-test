@@ -1,5 +1,6 @@
 const fetch = require("node-fetch");
 const fs = require("fs");
+const path = require("path");
 const { queue, proxy } = require("../config");
 const { Project } = require("../db/models");
 
