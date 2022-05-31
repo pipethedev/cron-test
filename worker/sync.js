@@ -9,9 +9,9 @@ const projectSync = queue("project_sync");
 projectSync.process(async () => {
   const projects = await Project.find({}).populate("domains");
 
-  projects.forEach((project) => {
+  projects.forEach(async (project) => {
     const { domains, port, dir, outputDirectory, uuid } = project;
-    domains.forEach(async ({ name }) => {
+    const domain = domains.map(async ({ name }) => {
       const urlString = `http://127.0.0.1:${port}`;
 
       if (!dir || !outputDirectory) {
@@ -37,8 +37,8 @@ projectSync.process(async () => {
 
             start.on("exit", async () => {
               project.pid = start.pid;
-              await project.save();
               console.log(`${name} is now running`);
+              return await project.save();
             });
           } catch (error) {
             console.log(`${name} couldn't start | ${error.message}`);
@@ -46,6 +46,8 @@ projectSync.process(async () => {
         }
       }
     });
+
+    await Promise.all(domain);
   });
 });
 
