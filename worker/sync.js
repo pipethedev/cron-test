@@ -1,4 +1,4 @@
-const fetch = require("node-fetch");
+const axios = require("axios");
 const fs = require("fs");
 const path = require("path");
 const { queue, proxy } = require("../config");
@@ -20,7 +20,7 @@ projectSync.process(async () => {
         console.log(`${dir} does not exist`);
       } else {
         try {
-          await fetch(urlString);
+          await axios(urlString);
 
           proxy.register(name, urlString, { isWatchMode: true });
 
