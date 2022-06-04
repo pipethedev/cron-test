@@ -16,10 +16,14 @@ proxy.register(
     const { domain, ip, id } = JSON.parse(data);
     proxy.unregister(domain);
     proxy.register(domain, ip, { id });
+
+    subscriber.quit();
   });
 
   subscriber.subscribe("domain-unregister", (data) => {
     const { domain } = JSON.parse(data);
     proxy.unregister(domain);
+
+    subscriber.quit();
   });
 })();

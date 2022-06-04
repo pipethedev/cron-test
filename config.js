@@ -20,16 +20,13 @@ const queue = (background_name) =>
   });
 
 const redisClient = async () => {
-  const client = createClient({
+  const subscriber = createClient({
     url: process.env.REDIS_URL || "",
   });
 
-  const subscriber = client.duplicate();
+  const publisher = subscriber.duplicate();
 
   await subscriber.connect();
-
-  const publisher = client.duplicate();
-
   await publisher.connect();
 
   return { subscriber, publisher };
@@ -58,22 +55,21 @@ const proxy = {
               console.log(error.message);
             });
         } else {
-          setTimeout(() => {
-            publisher
-              .publish(
-                "domain-success",
-                JSON.stringify({
-                  message: "Proxy server started",
-                  domain: `${
-                    process.env.NODE_ENV !== "production" ? "http" : "https"
-                  }://${domain}`,
-                })
-              )
-              .catch((error) => {
-                console.log(error.message);
-              });
-          }, 2000);
+          publisher
+            .publish(
+              "domain-success",
+              JSON.stringify({
+                message: "Proxy server started",
+                domain: `${
+                  process.env.NODE_ENV !== "production" ? "http" : "https"
+                }://${domain}`,
+              })
+            )
+            .catch((error) => {
+              console.log(error.message);
+            });
         }
+        publisher.quit();
       }
     } catch (err) {
       console.error(err);
