@@ -1,6 +1,5 @@
-const Pusher = require("pusher");
-const PusherJs = require("pusher-js");
 const dotenv = require("dotenv");
+const { createClient } = require("redis");
 const Queue = require("bull");
 require("dotenv").config();
 
@@ -11,21 +10,6 @@ const redbird = require("redbird")({
 
 dotenv.config();
 
-const pusher = new Pusher({
-  appId: process.env.PUSHER_APP_ID || "",
-  key: process.env.PUSHER_APP_KEY || "",
-  secret: process.env.PUSHER_APP_SECRET || "",
-  cluster: process.env.PUSHER_APP_CLUSTER || "eu",
-  useTLS: true,
-});
-
-const pusherClient = new PusherJs(process.env.PUSHER_APP_KEY || "", {
-  cluster: "eu",
-  channelAuthorization: {
-    endpoint: `http://127.0.0.1:${process.env.PORT || 5000}/pusher/auth`,
-  },
-});
-
 const queue = (background_name) =>
   new Queue(background_name, {
     redis: {
@@ -35,33 +19,56 @@ const queue = (background_name) =>
     },
   });
 
+const redisClient = async () => {
+  const client = createClient({
+    url: process.env.REDIS_URL || "",
+  });
+
+  const subscriber = client.duplicate();
+
+  await subscriber.connect();
+
+  const publisher = client.duplicate();
+
+  await publisher.connect();
+
+  return { subscriber, publisher };
+};
+
 const proxy = {
   // create a register function to register the domain with the proxy
-  register(domain, ip, { id, isWatchMode }) {
+  async register(domain, ip, { id, isWatchMode }) {
     try {
       redbird.register(domain, ip);
+      const { publisher } = await redisClient();
 
       if (!isWatchMode) {
         if (id) {
-          pusher
-            .trigger(`private-${id}`, "domain_mapped", {
-              message: "Domain mapped successfully",
-              domain: `${
-                process.env.NODE_ENV !== "production" ? "http" : "https"
-              }://${domain}`,
-            })
+          publisher
+            .publish(
+              `private-${id}-domain_mapped`,
+              JSON.stringify({
+                message: "Domain mapped successfully",
+                domain: `${
+                  process.env.NODE_ENV !== "production" ? "http" : "https"
+                }://${domain}`,
+              })
+            )
             .catch((error) => {
               console.log(error.message);
             });
         } else {
           setTimeout(() => {
-            pusher
-              .trigger("domain", "success", {
-                message: "Proxy server started",
-                domain: `${
-                  process.env.NODE_ENV !== "production" ? "http" : "https"
-                }://${domain}`,
-              })
+            publisher
+              .publish(
+                "domain-success",
+                JSON.stringify({
+                  message: "Proxy server started",
+                  domain: `${
+                    process.env.NODE_ENV !== "production" ? "http" : "https"
+                  }://${domain}`,
+                })
+              )
               .catch((error) => {
                 console.log(error.message);
               });
@@ -90,8 +97,7 @@ const proxy = {
 };
 
 module.exports = {
-  pusher,
-  pusherClient,
   queue,
   proxy,
+  redisClient,
 };

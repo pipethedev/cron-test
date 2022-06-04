@@ -1,7 +1,5 @@
-const { pusherClient, proxy } = require("./config");
+const { proxy, redisClient } = require("./config");
 const { connectToMongo } = require("./db");
-
-const channel = pusherClient.subscribe("domain");
 
 connectToMongo(process.env.MONGODB_URI || "");
 
@@ -12,11 +10,16 @@ proxy.register(
   {}
 );
 
-channel.bind("register", ({ domain, ip, id }) => {
-  proxy.unregister(domain);
-  proxy.register(domain, ip, { id });
-});
+(async () => {
+  const { subscriber } = await redisClient();
+  subscriber.subscribe("domain-register", (data) => {
+    const { domain, ip, id } = JSON.parse(data);
+    proxy.unregister(domain);
+    proxy.register(domain, ip, { id });
+  });
 
-channel.bind("unregister", ({ domain }) => {
-  proxy.unregister(domain);
-});
+  subscriber.subscribe("domain-unregister", (data) => {
+    const { domain } = JSON.parse(data);
+    proxy.unregister(domain);
+  });
+})();
