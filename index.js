@@ -11,7 +11,8 @@ proxy.register(
 );
 
 (async () => {
-  const { subscriber } = await redisClient();
+  const { subscriber } = redisClient();
+  await subscriber.connect();
   subscriber.subscribe("domain-register", (data) => {
     const { domain, ip, id } = JSON.parse(data);
     proxy.unregister(domain);

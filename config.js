@@ -19,15 +19,12 @@ const queue = (background_name) =>
     },
   });
 
-const redisClient = async () => {
+const redisClient = () => {
   const subscriber = createClient({
     url: process.env.REDIS_URL || "",
   });
 
   const publisher = subscriber.duplicate();
-
-  await subscriber.connect();
-  await publisher.connect();
 
   return { subscriber, publisher };
 };
@@ -37,10 +34,11 @@ const proxy = {
   async register(domain, ip, { id, isWatchMode }) {
     try {
       redbird.register(domain, ip);
-      const { publisher } = await redisClient();
+      const { publisher } = redisClient();
 
       if (!isWatchMode) {
         if (id) {
+          await publisher.connect();
           publisher
             .publish(
               `private-${id}-domain_mapped`,
@@ -54,7 +52,9 @@ const proxy = {
             .catch((error) => {
               console.log(error.message);
             });
+          publisher.quit();
         } else {
+          await publisher.connect();
           publisher
             .publish(
               "domain-success",
@@ -68,8 +68,8 @@ const proxy = {
             .catch((error) => {
               console.log(error.message);
             });
+          publisher.quit();
         }
-        publisher.quit();
       }
     } catch (err) {
       console.error(err);
