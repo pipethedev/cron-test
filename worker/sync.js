@@ -38,7 +38,7 @@ projectSync.process(async () => {
             start.on("exit", async () => {
               project.pid = start.pid;
               console.log(`${name} is now running`);
-              return await project.save();
+              return project.save();
             });
           } catch (error) {
             console.log(`${name} couldn't start | ${error.message}`);
