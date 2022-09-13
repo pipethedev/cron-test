@@ -1,7 +1,8 @@
 const axios = require("axios");
 const fs = require("fs");
 const { Project } = require("@brimble/models");
-const { exec, spawn } = require("child_process");
+const { spawn } = require("child_process");
+const path = require("path");
 const { queue, proxy } = require("../config");
 
 const projectSync = queue("project_sync");
@@ -41,20 +42,26 @@ projectSync.process(async (job, done) => {
             const deployLog = `${dir}/deploy.log`;
 
             const fileDir = rootDir ? path.join(dir, rootDir) : dir;
-            spawn("nohup", [
-              "brimble",
-              "dev",
-              `${fileDir}`,
-              `${port && `"-p ${port}"`}`,
-              `${options.startOnly && "-so"}`,
-              buildCommand && "--build-command",
-              buildCommand && `"${buildCommand}"`,
-              outputDirectory && "--output-directory",
-              outputDirectory && `"${outputDirectory}"`,
-              ">",
-              deployLog,
-              "&",
-            ]);
+            spawn(
+              "nohup",
+              [
+                "brimble",
+                "dev",
+                `${fileDir}`,
+                `${port && `"-p ${port}"`}`,
+                "-so",
+                buildCommand && "--build-command",
+                buildCommand && `"${buildCommand}"`,
+                outputDirectory && "--output-directory",
+                outputDirectory && `"${outputDirectory}"`,
+                ">",
+                deployLog,
+                "&",
+              ],
+              {
+                shell: true,
+              }
+            );
 
             const watcher = spawn("tail", ["-f", deployLog]);
             watcher.stdout.on("data", async (data) => {
