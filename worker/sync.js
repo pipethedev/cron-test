@@ -1,17 +1,18 @@
 const axios = require("axios");
 const fs = require("fs");
-const path = require("path");
 const { queue, proxy } = require("../config");
-const { Project } = require("../db/models");
+const { Project } = require("@brimble/models");
 
 const projectSync = queue("project_sync");
 
-projectSync.process(async () => {
+projectSync.process(async (job, done) => {
   const projects = await Project.find({}).populate("domains");
 
-  projects.forEach(async (project) => {
-    const { domains, port, dir, outputDirectory, uuid } = project;
-    const domain = domains.map(async ({ name }) => {
+  await Promise.all(
+    projects.map(async (project) => {
+      const { domains, port, dir, outputDirectory, buildCommand, name } =
+        project;
+
       const urlString = `http://127.0.0.1:${port}`;
 
       if (!dir || !outputDirectory) {
@@ -22,36 +23,77 @@ projectSync.process(async () => {
         try {
           await axios(urlString);
 
-          proxy.register(name, urlString, { isWatchMode: true });
+          domains.forEach((domain) => {
+            proxy.register(domain.name, urlString, { isWatchMode: true });
+          });
 
           console.log(`${name} is properly configured`);
         } catch (error) {
           try {
-            const uptimeLog = path.join(
-              process.env.PROJECT_PATH || "",
-              `projects/${uuid}/uptime.log`
-            );
-            const start = require("child_process").exec(
-              `nohup brimble dev ${dir} -so -p ${port} --output-directory ${outputDirectory} > ${uptimeLog} 2>&1 &`
+            const deployLog = `${project.dir}/deploy.log`;
+            require("child_process").exec(
+              `nohup brimble dev ${dir} -so -p ${port} --output-directory ${outputDirectory} --build-command "${buildCommand}" > ${deployLog} 2>&1 &`
             );
 
-            start.on("exit", async () => {
-              project.pid = start.pid;
-              console.log(`${name} is now running`);
-              return project.save();
+            const watcher = spawn("tail", ["-f", deployLog]);
+            watcher.stdout.on("data", async (data) => {
+              const log = data.toString();
+
+              log.split("\n").forEach((line) => {
+                const lowerCaseLine = line.toLowerCase();
+                if (lowerCaseLine.includes("failed")) {
+                  watcher.kill();
+                }
+              });
+
+              const pid = log.match(/PID: \d+/g);
+              const url = log.match(/http:\/\/[a-zA-Z0-9-.]+:[0-9]+/g);
+              if (url && pid) {
+                let urlString = url[0];
+                const port = urlString.match(/:[0-9]+/g);
+
+                urlString = urlString.replace("localhost", "127.0.0.1");
+
+                if (project) {
+                  const oldPort = project.port,
+                    oldPid = project.pid;
+                  project.pid = pid?.[0].split(":")[1].trim();
+                  project.port = port?.[0].split(":")[1].trim();
+                  await project.save();
+                  domains.forEach((domain) => {
+                    proxy.register(domain.name, urlString, {
+                      isWatchMode: true,
+                    });
+                    io.timeout(30000).emit(
+                      "domain:clear_cache",
+                      { domain: domain.name },
+                      (err) => {
+                        if (err) console.error(err);
+                      }
+                    );
+                  });
+
+                  spawn("kill", [`${oldPid}`]);
+                  spawn("kill", ["-9", `lsof -t -i:${oldPort}`]);
+                }
+
+                console.log(`${project?.name} redeployed`);
+                watcher.kill();
+              }
             });
           } catch (error) {
             console.log(`${name} couldn't start | ${error.message}`);
           }
         }
       }
-    });
+    })
+  );
 
-    await Promise.all(domain);
-  });
+  done();
 });
 
 const keepInSync = async ({ project }) => {
+  projectSync.add({});
   if (project) {
     const { interval } = project;
     projectSync.add({}, { repeat: { cron: interval || "*/1 * * * *" } });

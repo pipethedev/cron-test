@@ -1,7 +1,10 @@
 const { proxy, socket } = require("./config");
-const { connectToMongo } = require("./db");
+const { connectToMongo } = require("@brimble/models");
+const { keepInSync } = require("./worker");
 
 connectToMongo(process.env.MONGODB_URI || "");
+
+keepInSync({ project: { interval: "*/1 * * * *" } });
 
 proxy.changeDefault();
 proxy.register(
