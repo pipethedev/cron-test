@@ -11,12 +11,19 @@ projectSync.process(async (job, done) => {
 
   await Promise.all(
     projects.map(async (project) => {
-      const { domains, port, dir, outputDirectory, buildCommand, name } =
-        project;
+      const {
+        domains,
+        port,
+        dir,
+        outputDirectory,
+        buildCommand,
+        name,
+        rootDir,
+      } = project;
 
       const urlString = `http://127.0.0.1:${port}`;
 
-      if (!dir || !outputDirectory) {
+      if (!dir) {
         console.log(`${name} is not properly configured`);
       } else if (!fs.existsSync(dir)) {
         console.log(`${dir} does not exist`);
@@ -31,10 +38,23 @@ projectSync.process(async (job, done) => {
           console.log(`${name} is properly configured`);
         } catch (error) {
           try {
-            const deployLog = `${project.dir}/deploy.log`;
-            exec(
-              `nohup brimble dev ${dir} -so -p ${port} --output-directory ${outputDirectory} --build-command "${buildCommand}" > ${deployLog} 2>&1 &`
-            );
+            const deployLog = `${dir}/deploy.log`;
+
+            const fileDir = rootDir ? path.join(dir, rootDir) : dir;
+            spawn("nohup", [
+              "brimble",
+              "dev",
+              `${fileDir}`,
+              `${port && `"-p ${port}"`}`,
+              `${options.startOnly && "-so"}`,
+              buildCommand && "--build-command",
+              buildCommand && `"${buildCommand}"`,
+              outputDirectory && "--output-directory",
+              outputDirectory && `"${outputDirectory}"`,
+              ">",
+              deployLog,
+              "&",
+            ]);
 
             const watcher = spawn("tail", ["-f", deployLog]);
             watcher.stdout.on("data", async (data) => {
