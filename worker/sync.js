@@ -1,7 +1,8 @@
 const axios = require("axios");
 const fs = require("fs");
-const { queue, proxy } = require("../config");
 const { Project } = require("@brimble/models");
+const { exec, spawn } = require("child_process");
+const { queue, proxy } = require("../config");
 
 const projectSync = queue("project_sync");
 
@@ -31,7 +32,7 @@ projectSync.process(async (job, done) => {
         } catch (error) {
           try {
             const deployLog = `${project.dir}/deploy.log`;
-            require("child_process").exec(
+            exec(
               `nohup brimble dev ${dir} -so -p ${port} --output-directory ${outputDirectory} --build-command "${buildCommand}" > ${deployLog} 2>&1 &`
             );
 
