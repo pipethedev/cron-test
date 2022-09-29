@@ -3,7 +3,7 @@ const fs = require("fs");
 const { Project } = require("@brimble/models");
 const { spawn } = require("child_process");
 const path = require("path");
-const { queue, proxy } = require("../config");
+const { queue, proxy, socket } = require("../config");
 
 const projectSync = queue("project_sync");
 
@@ -92,13 +92,7 @@ projectSync.process(async (job, done) => {
                     proxy.register(domain.name, urlString, {
                       isWatchMode: true,
                     });
-                    io.timeout(30000).emit(
-                      "domain:clear_cache",
-                      { domain: domain.name },
-                      (err) => {
-                        if (err) console.error(err);
-                      }
-                    );
+                    socket.emit("domain:clear_cache", { domain: domain.name });
                   });
 
                   spawn("kill", [`${oldPid}`]);
