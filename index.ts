@@ -4,10 +4,11 @@ import { connectToMongo } from "@brimble/models";
 import { container, delay } from "tsyringe";
 import { KeepSyncQueue } from "./queue/keep-sync.queue";
 import { RedisClient } from "./redis/redis-client";
+import { keepInSync } from "./worker";
 
 connectToMongo(process.env.MONGODB_URI || "");
 
-const keepInSync = container.resolve(delay(() => KeepSyncQueue));
+const sync = container.resolve(delay(() => KeepSyncQueue));
 const redisClient = container.resolve(delay(() => RedisClient));
 
 proxy.changeDefault();
@@ -17,7 +18,9 @@ proxy.register(
   {}
 );
 
-keepInSync.startWorker();
+keepInSync({ project: { interval: process.env.SYNC_INTERVAL as string } });
+
+sync.startWorker();
 
 socket.on("domain-register", ({ domain, ip, id }) => {
   proxy.unregister(domain);
@@ -38,9 +41,10 @@ process.on('SIGTERM', closeApp);
 process.on('SIGINT', closeApp);
 
 function closeApp(){
+  console.log("Shutting down gracefully");
   socket.disconnect();
   socket.close();
-  keepInSync.closeWorker();
+  sync.closeWorker();
   redisClient.close();
   process.exit(0);
 }

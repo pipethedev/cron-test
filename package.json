@@ -6,8 +6,8 @@
   "scripts": {
     "tsc": "./node_modules/typescript/bin/tsc",
     "build": "tsc",
-    "postinstall": "npm run tsc",
-    "dev": "nodemon index.js",
+    "start:dev": "NODE_PATH=. node -r  ./dist/index.js",
+    "dev": "nodemon",
     "pm2": "pm2 startOrRestart ecosystem.config.js --env production"
   },
   "dependencies": {
