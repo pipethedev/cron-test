@@ -1,0 +1,43 @@
+import { Queue, Worker } from "bullmq";
+import { container, delay, injectable } from "tsyringe";
+import { queue } from "../config";
+import { RedisClient } from "../redis/redis-client";
+import { keepInSync } from "../worker/sync";
+
+const redis = container.resolve(delay(() => RedisClient));
+
+@injectable()
+export class KeepSyncQueue {
+  private queueName: string = "project_sync";
+  private keepSyncQueue: Queue | undefined;
+  private worker: Worker = new Worker(this.queueName, keepInSync, {
+    autorun: false,
+    connection: redis.get().duplicate(),
+  });
+
+  async startWorker() {
+    // initialize queue
+    this.keepSyncQueue = queue(this.queueName);
+
+    this.worker.run();
+  }
+
+  async execute(data: any) {
+    await this.keepSyncQueue?.add(this.queueName, data, {
+      attempts: 5,
+      priority: 1,
+      repeat: {
+        cron: "*/1 * * * *",
+      },
+      backoff: {
+        type: "exponential",
+        delay: 5000,
+      },
+    });
+  }
+
+  async closeWorker() {
+    this.worker && (await this.worker.close());
+  }
+}
+

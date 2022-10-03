@@ -1,6 +1,8 @@
-const { io } = require("socket.io-client");
-const dotenv = require("dotenv");
-const Queue = require("bull");
+import { io } from "socket.io-client";
+import dotenv from "dotenv";
+import { Queue } from "bullmq";
+import { RedisClient } from "./redis/redis-client";
+import { container, delay } from "tsyringe";
 require("dotenv").config();
 
 const redbird = require("redbird")({
@@ -10,20 +12,21 @@ const redbird = require("redbird")({
 
 dotenv.config();
 
-const socket = io(`http://127.0.0.1:${process.env.PORT || 5000}`);
+const redis = container.resolve(delay(() => RedisClient));
 
-const queue = (background_name) =>
-  new Queue(background_name, {
-    redis: {
-      host: process.env.REDIS_HOST || "localhost",
-      port: Number(process.env.REDIS_PORT) || 6379,
-      password: process.env.REDIS_PASSWORD || "",
+export const socket = io(`http://127.0.0.1:${process.env.PORT || 5000}`);
+
+export const queue = (name: string) =>
+  new Queue(name, {
+    connection: redis.get().duplicate(),
+    defaultJobOptions: {
+      removeOnComplete: true,
     },
   });
 
-const proxy = {
+export const proxy = {
   // create a register function to register the domain with the proxy
-  async register(domain, ip, { id, isWatchMode }) {
+  async register(domain: string, ip: string, { id, isWatchMode }: any) {
     try {
       redbird.register(domain, ip);
       if (!isWatchMode) {
@@ -49,12 +52,12 @@ const proxy = {
   },
 
   // create an unregister function to unregister the domain with the proxy
-  unregister(domain) {
+  unregister(domain: string) {
     redbird.unregister(domain);
   },
 
   changeDefault() {
-    redbird.notFound((req, res) => {
+    redbird.notFound((req: any, res: any) => {
       // TODO: Create Brimble 404 page
       const host = req.headers.host;
       const requestId = req.headers["x-brimble-id"];
@@ -62,10 +65,4 @@ const proxy = {
       res.end(`Deployment not found for ${host}`);
     });
   },
-};
-
-module.exports = {
-  queue,
-  proxy,
-  socket,
 };
