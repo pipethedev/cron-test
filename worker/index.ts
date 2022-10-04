@@ -1,5 +1,3 @@
 import { keepInSync } from "./sync";
 
-export {
-    keepInSync
-};
+export { keepInSync };

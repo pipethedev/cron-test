@@ -42,4 +42,3 @@ export class KeepSyncQueue {
     console.log("Keep in sync worker closed/exited");
   }
 }
-

@@ -12,7 +12,7 @@ export class RedisClient {
   }
 
   async close() {
-    await this.get().disconnect();
+    this.get().disconnect();
   }
 
   private createClient() {
@@ -34,15 +34,15 @@ export class RedisClient {
     });
 
     redisClient.on("error", (err) => {
-        console.log({ err }, "Redis client connection error");
+      console.log({ err }, "Redis client connection error");
     });
 
     redisClient.on("ready", () => {
-        console.log("Redis client is ready");
+      console.log("Redis client is ready");
     });
 
     redisClient.on("reconnecting", () => {
-        console.log("Redis client is reconnected");
+      console.log("Redis client is reconnected");
     });
 
     return redisClient;

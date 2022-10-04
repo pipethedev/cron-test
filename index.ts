@@ -31,16 +31,15 @@ socket.on("domain-unregister", ({ domain }) => {
   proxy.unregister(domain);
 });
 
-
-socket.on('end', function (){
+socket.on("end", function () {
   socket.disconnect();
   socket.close();
 });
 
-process.on('SIGTERM', closeApp);
-process.on('SIGINT', closeApp);
+process.on("SIGTERM", closeApp);
+process.on("SIGINT", closeApp);
 
-function closeApp(){
+function closeApp() {
   console.log("Shutting down gracefully");
   socket.disconnect();
   socket.close();
