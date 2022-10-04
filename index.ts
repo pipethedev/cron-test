@@ -18,8 +18,6 @@ proxy.register(
   {}
 );
 
-// keepInSync({ project: { interval: process.env.SYNC_INTERVAL as string } });
-
 sync.startWorker();
 
 socket.on("domain-register", ({ domain, ip, id }) => {
