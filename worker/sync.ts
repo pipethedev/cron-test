@@ -5,6 +5,17 @@ import { Project } from "@brimble/models";
 import { spawn } from "child_process";
 import path from "path";
 import { proxy, socket } from "../config";
+import { container, delay } from "tsyringe";
+import { KeepSyncQueue } from "../queue/keep-sync.queue";
+
+const projectSync = container.resolve(delay(() => KeepSyncQueue));
+
+export const keepInSync = async ({ project }: any) => {
+  if (project) {
+    const { interval } = project;
+    projectSync.execute({}, interval || "*/5 * * * *");
+  }
+};
 
 export const keepInSyncWorker = async () => {
   try {

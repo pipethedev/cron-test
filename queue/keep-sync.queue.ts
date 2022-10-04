@@ -29,7 +29,7 @@ export class KeepSyncQueue {
       attempts: 5,
       priority: 1,
       repeat: {
-        cron: process.env.SYNC_INTERVAL || cronInterval,
+        cron: cronInterval || process.env.SYNC_INTERVAL,
       },
       backoff: {
         type: "exponential",
