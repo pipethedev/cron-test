@@ -1,6 +1,6 @@
 import "reflect-metadata";
 import { proxy, socket } from "./config";
-import { connectToMongo } from "@brimble/models";
+import { connectToMongo, closeMongo } from "@brimble/models";
 import { container, delay } from "tsyringe";
 import { KeepSyncQueue } from "./queue/keep-sync.queue";
 import { RedisClient } from "./redis/redis-client";
@@ -45,5 +45,6 @@ function closeApp() {
   socket.close();
   sync.closeWorker();
   redisClient.close();
+  closeMongo();
   process.exit(0);
 }
