@@ -4,7 +4,7 @@ import { connectToMongo, closeMongo } from "@brimble/models";
 import { container, delay } from "tsyringe";
 import { KeepSyncQueue } from "./queue/keep-sync.queue";
 import { RedisClient } from "./redis/redis-client";
-import { keepInSync } from "./worker";
+// import { keepInSync } from "./worker";
 
 connectToMongo(process.env.MONGODB_URI || "");
 
@@ -18,7 +18,7 @@ proxy.register(
   {}
 );
 
-keepInSync({ project: { interval: process.env.SYNC_INTERVAL as string } });
+// keepInSync({ project: { interval: process.env.SYNC_INTERVAL as string } });
 
 sync.startWorker();
 

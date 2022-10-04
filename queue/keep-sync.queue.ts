@@ -28,7 +28,9 @@ export class KeepSyncQueue {
     await this.keepSyncQueue?.add(this.queueName, data, {
       attempts: 5,
       priority: 1,
-      repeat: cronInterval,
+      repeat: {
+        cron: "*/1 * * * *",
+      },
       backoff: {
         type: "exponential",
         delay: 5000,
