@@ -24,13 +24,10 @@ export class KeepSyncQueue {
     console.log("Keep in sync worker started");
   }
 
-  async execute(data: any, cronInterval?: any) {
+  async execute(data: any) {
     await this.keepSyncQueue?.add(this.queueName, data, {
       attempts: 5,
       priority: 1,
-      repeat: {
-        cron: cronInterval || process.env.SYNC_INTERVAL,
-      },
       backoff: {
         type: "exponential",
         delay: 5000,
