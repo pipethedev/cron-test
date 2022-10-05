@@ -28,6 +28,17 @@ export const keepInSync = async ({ project }: any) => {
             rootDir,
           } = project;
 
+          await projectSync.execute({
+            domains,
+            port,
+            dir,
+            outputDirectory,
+            buildCommand,
+            name,
+            rootDir,
+            project,
+          });
+
           const urlString = `http://127.0.0.1:${port}`;
 
           if (!dir) {
@@ -44,16 +55,19 @@ export const keepInSync = async ({ project }: any) => {
 
               console.log(`${name} is properly configured`);
             } catch (error) {
-              projectSync.execute({
-                domains,
-                port,
-                dir,
-                outputDirectory,
-                buildCommand,
-                name,
-                rootDir,
-                project,
-              });
+              const { response } = error as any;
+              if (response && response.status === 404) {
+                await projectSync.execute({
+                  domains,
+                  port,
+                  dir,
+                  outputDirectory,
+                  buildCommand,
+                  name,
+                  rootDir,
+                  project,
+                });
+              }
             }
           }
         })

@@ -9,23 +9,20 @@ const redis = container.resolve(delay(() => RedisClient));
 @injectable()
 export class KeepSyncQueue {
   private queueName: string = "project_sync";
-  private keepSyncQueue: Queue | undefined;
+  private keepSyncQueue = queue(this.queueName);
   private worker: Worker = new Worker(this.queueName, keepInSyncWorker, {
     autorun: false,
     connection: redis.get().duplicate(),
   });
 
   async startWorker() {
-    // initialize queue
-    this.keepSyncQueue = queue(this.queueName);
-
     this.worker.run();
 
     console.log("Keep in sync worker started");
   }
 
   async execute(data: any) {
-    await this.keepSyncQueue?.add(this.queueName, data, {
+    await (this.keepSyncQueue as Queue).add(this.queueName, data, {
       attempts: 5,
       priority: 1,
       backoff: {
