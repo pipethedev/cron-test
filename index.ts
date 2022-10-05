@@ -19,7 +19,7 @@ proxy.register(
 );
 
 sync.startWorker();
-keepInSync({ project: { interval: 300000 } });
+keepInSync({ project: { interval: process.env.SYNC_INTERVAL || 60000 } });
 
 socket.on("domain-register", ({ domain, ip, id }) => {
   proxy.unregister(domain);
