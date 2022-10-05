@@ -154,8 +154,7 @@ const starter = async (data: any) => {
       console.log(`${name} is properly configured`);
       return false;
     } catch (error) {
-      const { response } = error as any;
-      return response && response.status === 404;
+      return true;
     }
   }
 };
