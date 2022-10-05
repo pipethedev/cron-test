@@ -131,12 +131,11 @@ export const keepInSyncWorker = async (job: Job) => {
 
         urlString = urlString.replace("localhost", "127.0.0.1");
 
-        if (project) {
-          const oldPort = project.port,
-            oldPid = project.pid;
-          project.pid = pid?.[0].split(":")[1].trim();
-          project.port = port?.[0].split(":")[1].trim();
-          await project.save();
+        const proj = await Project.findById(project?._id).populate("domains");
+        if (proj) {
+          proj.pid = pid?.[0].split(":")[1].trim();
+          proj.port = port?.[0].split(":")[1].trim();
+          await proj.save();
           domains.forEach((domain: IDomain) => {
             proxy.register(domain.name, urlString, {
               isWatchMode: true,
@@ -146,8 +145,8 @@ export const keepInSyncWorker = async (job: Job) => {
             });
           });
 
-          spawn("kill", [`${oldPid}`]);
-          spawn("kill", ["-9", `lsof -t -i:${oldPort}`]);
+          spawn("kill", [`${project.pid}`]);
+          spawn("kill", ["-9", `lsof -t -i:${project.port}`]);
         }
 
         console.log(`${project?.name} redeployed`);
