@@ -2,7 +2,7 @@ import { IDomain, IProject } from "@brimble/models";
 import axios from "axios";
 import fs from "fs";
 import { Project } from "@brimble/models";
-import { spawn } from "child_process";
+import { spawn, exec } from "child_process";
 import path from "path";
 import { proxy, socket } from "../config";
 import { container, delay } from "tsyringe";
@@ -92,7 +92,7 @@ export const keepInSyncWorker = async (job: Job) => {
         log.split("\n").forEach((line: any) => {
           const lowerCaseLine = line.toLowerCase();
           if (lowerCaseLine.includes("failed")) {
-            watcher.kill();
+            exec(`kill -9 ${watcher.pid}`);
           }
         });
 
@@ -118,12 +118,12 @@ export const keepInSyncWorker = async (job: Job) => {
               });
             });
 
-            spawn("kill", [`${project.pid}`]);
-            spawn("kill", ["-9", `lsof -t -i:${project.port}`]);
+            exec(`kill ${project.pid}`);
+            exec(`kill -9" lsof -t -i:${project.port}`);
           }
 
           console.log(`${project?.name} redeployed`);
-          watcher.kill();
+          exec(`kill -9 ${watcher.pid}`);
         }
       });
     }
