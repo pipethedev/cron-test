@@ -104,24 +104,21 @@ export const keepInSyncWorker = async (job: Job) => {
 
           urlString = urlString.replace("localhost", "127.0.0.1");
 
-          const proj = await Project.findById(project?._id).populate("domains");
-          if (proj) {
-            proj.pid = pid?.[0].split(":")[1].trim();
-            proj.port = port?.[0].split(":")[1].trim();
-            await proj.save();
-            domains.forEach((domain: IDomain) => {
-              proxy.register(domain.name, urlString, {
-                isWatchMode: true,
-              });
-              socket.emit("domain:clear_cache", {
-                domain: domain.name,
-              });
+          await Project.findByIdAndUpdate(project?._id, {
+            pid: pid?.[0].split(":")[1].trim(),
+            port: port?.[0].split(":")[1].trim(),
+          });
+          domains.forEach((domain: IDomain) => {
+            proxy.register(domain.name, urlString, {
+              isWatchMode: true,
             });
+            socket.emit("domain:clear_cache", {
+              domain: domain.name,
+            });
+          });
 
-            exec(`kill ${project.pid}`);
-            exec(`kill -9" lsof -t -i:${project.port}`);
-          }
-
+          exec(`kill ${project.pid}`);
+          exec(`kill -9" lsof -t -i:${project.port}`);
           console.log(`${project?.name} redeployed`);
           exec(`kill -9 ${watcher.pid}`);
         }
@@ -134,6 +131,8 @@ export const keepInSyncWorker = async (job: Job) => {
 
 const starter = async (data: any) => {
   const { domains, port, dir, name } = data;
+
+  if (!name) return false;
 
   const urlString = `http://127.0.0.1:${port}`;
 
