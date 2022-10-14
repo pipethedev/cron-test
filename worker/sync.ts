@@ -14,11 +14,22 @@ const projectSync = container.resolve(delay(() => KeepSyncQueue));
 export const keepInSync = async ({ project }: any) => {
   if (project) {
     const { interval } = project;
-    setInterval(async () => {
-      const projects = await Project.find({}).populate("domains");
-      await Promise.all(
-        projects.map(async (project: IProject) => {
-          const {
+    const projects = await Project.find({}).populate("domains");
+    await Promise.all(
+      projects.map(async (project: IProject) => {
+        const {
+          domains,
+          port,
+          dir,
+          outputDirectory,
+          buildCommand,
+          name,
+          rootDir,
+        } = project;
+
+        const start = await starter({ domains, port, dir, name });
+        if (start) {
+          await projectSync.execute({
             domains,
             port,
             dir,
@@ -26,24 +37,11 @@ export const keepInSync = async ({ project }: any) => {
             buildCommand,
             name,
             rootDir,
-          } = project;
-
-          const start = await starter({ domains, port, dir, name });
-          if (start) {
-            await projectSync.execute({
-              domains,
-              port,
-              dir,
-              outputDirectory,
-              buildCommand,
-              name,
-              rootDir,
-              project,
-            });
-          }
-        })
-      );
-    }, interval);
+            project,
+          });
+        }
+      })
+    );
   }
 };
 
