@@ -115,10 +115,13 @@ export const keepInSyncWorker = async (job: Job) => {
             });
           });
 
-          exec(`kill ${project.pid}`);
-          exec(`kill -9" lsof -t -i:${project.port}`);
+          const oldPid = project.pid;
           console.log(`${project?.name} redeployed`);
-          exec(`kill -9 ${watcher.pid}`);
+
+          setTimeout(() => {
+            exec(`kill -9 ${watcher.pid}`);
+            exec(`kill -9 ${oldPid}`);
+          }, 10000);
         }
       });
     }
