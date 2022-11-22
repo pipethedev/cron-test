@@ -11,41 +11,40 @@ import { Job } from "bullmq";
 
 const projectSync = container.resolve(delay(() => KeepSyncQueue));
 
-export const keepInSync = async ({ project }: any) => {
-  if (project) {
-    const { interval } = project;
-    setInterval(async () => {
-      const projects = await Project.find({}).populate("domains");
-      await Promise.all(
-        projects.map(async (project: IProject) => {
-          const {
-            domains,
-            port,
-            dir,
-            outputDirectory,
-            buildCommand,
-            name,
-            rootDir,
-          } = project;
+export const keepInSync = async () => {
+  const projects = await Project.find({}).populate("domains");
+  await Promise.all(
+    projects.map(async (project: IProject) => {
+      const {
+        domains,
+        port,
+        dir,
+        outputDirectory,
+        buildCommand,
+        name,
+        rootDir,
+      } = project;
 
-          const start = await starter({ domains, port, dir, name });
-          if (start) {
-            await projectSync.execute({
-              domains,
-              port,
-              dir,
-              outputDirectory,
-              buildCommand,
-              name,
-              rootDir,
-              project,
-            });
-          }
-        })
-      );
-    }, interval);
-  }
+      const start = await starter({ domains, port, dir, name });
+      if (start) {
+        await projectSync.execute({
+          domains,
+          port,
+          dir,
+          outputDirectory,
+          buildCommand,
+          name,
+          rootDir,
+          project,
+        });
+      }
+    })
+  );
 };
+
+setInterval(async () => {
+  await keepInSync();
+}, Number(process.env.SYNC_INTERVAL || 300000));
 
 export const keepInSyncWorker = async (job: Job) => {
   const {
@@ -123,7 +122,8 @@ export const keepInSyncWorker = async (job: Job) => {
           setTimeout(() => {
             exec(`kill -9 ${watcher.pid}`);
             exec(`kill -9 ${oldPid}`);
-          }, 10000);
+            watcher.kill();
+          }, 5000);
         }
       });
     }
