@@ -27,6 +27,7 @@ export const keepInSync = async () => {
 
       const start = await starter({ domains, port, dir, name });
       if (start) {
+        console.log(`Starting ${name}...`);
         await projectSync.execute({
           domains,
           port,
@@ -60,6 +61,7 @@ export const keepInSyncWorker = async (job: Job) => {
   try {
     const start = await starter({ domains, port, dir, name });
     if (start) {
+      console.log(`Executing ${name}...`);
       const deployLog = `${dir}/deploy.log`;
 
       const fileDir = rootDir ? path.join(dir, rootDir) : dir;
@@ -123,6 +125,7 @@ export const keepInSyncWorker = async (job: Job) => {
             exec(`kill -9 ${watcher.pid}`);
             exec(`kill -9 ${oldPid}`);
             watcher.kill();
+            console.log(`${project?.name} ended successfully`);
           }, 5000);
           exec(`kill -9 ${watcher.pid}`);
           exec(`kill -9 ${oldPid}`);
@@ -156,12 +159,12 @@ const starter = async (data: any) => {
         proxy.register(domain.name, urlString, { isWatchMode: true });
       });
 
-      console.error(`${name} is properly configured`);
+      console.log(`${name} is properly configured and running`);
       return false;
     } catch (error) {
       const { response, code } = error as any;
       console.error({
-        error: { res: response.data, code },
+        error: { res: response?.data, code },
         urlString,
         name,
         port,
