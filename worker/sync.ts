@@ -12,7 +12,7 @@ import { Job } from "bullmq";
 const projectSync = container.resolve(delay(() => KeepSyncQueue));
 
 export const keepInSync = async () => {
-  const projects = await Project.find({}).populate("domains");
+  const projects = await Project.find().populate("domains");
   await Promise.all(
     projects.map(async (project: IProject) => {
       const {
@@ -27,7 +27,7 @@ export const keepInSync = async () => {
 
       const start = await starter({ domains, port, dir, name });
       if (start) {
-        console.log(`Starting ${name}...`);
+        console.log(`Started ${name}`);
         await projectSync.execute({
           domains,
           port,
@@ -164,7 +164,7 @@ const starter = async (data: any) => {
     console.error(`${name} is not properly configured`);
     return false;
   } else if (!fs.existsSync(dir)) {
-    console.error(`${dir} does not exist`);
+    console.error(`${dir} does not exist -> ${name}`);
     return false;
   } else {
     try {
@@ -173,8 +173,6 @@ const starter = async (data: any) => {
       domains.forEach((domain: IDomain) => {
         proxy.register(domain.name, urlString, { isWatchMode: true });
       });
-
-      console.log(`${name} is properly configured and running`);
       return false;
     } catch (error) {
       const { response, code } = error as any;
