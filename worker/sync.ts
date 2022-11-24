@@ -143,10 +143,10 @@ const starter = async (data: any) => {
   const urlString = `http://127.0.0.1:${port}`;
 
   if (!dir) {
-    console.log(`${name} is not properly configured`);
+    console.error(`${name} is not properly configured`);
     return false;
   } else if (!fs.existsSync(dir)) {
-    console.log(`${dir} does not exist`);
+    console.error(`${dir} does not exist`);
     return false;
   } else {
     try {
@@ -156,9 +156,16 @@ const starter = async (data: any) => {
         proxy.register(domain.name, urlString, { isWatchMode: true });
       });
 
-      console.log(`${name} is properly configured`);
+      console.error(`${name} is properly configured`);
       return false;
     } catch (error) {
+      const { response, code } = error as any;
+      console.error({
+        error: { res: response.data, code },
+        urlString,
+        name,
+        port,
+      });
       return true;
     }
   }

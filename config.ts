@@ -7,7 +7,7 @@ require("dotenv").config();
 
 const redbird = require("redbird")({
   port: process.env.PROXY_PORT || 9999,
-  silent: true,
+  bunyan: false,
 });
 
 dotenv.config();
