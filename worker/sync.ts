@@ -65,7 +65,7 @@ export const keepInSyncWorker = async (job: Job) => {
       const deployLog = `${dir}/deploy.log`;
 
       const fileDir = rootDir ? path.join(dir, rootDir) : dir;
-      spawn(
+      const start = spawn(
         "nohup",
         [
           "brimble",
@@ -77,14 +77,28 @@ export const keepInSyncWorker = async (job: Job) => {
           buildCommand && `"${buildCommand}"`,
           outputDirectory && "--output-directory",
           outputDirectory && `"${outputDirectory}"`,
-          ">",
+          ">>",
           deployLog,
-          "&",
+          "2>&1&",
         ],
         {
           shell: true,
         }
       );
+
+      start.stderr.on("data", (data) => {
+        const message = data.toString();
+        fs.createWriteStream(deployLog, message);
+      });
+
+      start.on("close", (code) => {
+        if (code !== 0) {
+          fs.createWriteStream(
+            deployLog,
+            `child process exited with code ${code as any}`
+          );
+        }
+      });
 
       const watcher = spawn("tail", ["-f", deployLog]);
       watcher.stdout.on("data", async (data: any) => {
@@ -93,7 +107,11 @@ export const keepInSyncWorker = async (job: Job) => {
         log.split("\n").forEach((line: any) => {
           const lowerCaseLine = line.toLowerCase();
           if (lowerCaseLine.includes("failed")) {
-            exec(`kill -9 ${watcher.pid}`);
+            setTimeout(() => {
+              exec(`kill -9 ${watcher.pid}`);
+              exec(`kill -9 ${start.pid}`);
+              console.error(`Failed to start ${name}`);
+            }, 5000);
           }
         });
 
@@ -127,9 +145,6 @@ export const keepInSyncWorker = async (job: Job) => {
             watcher.kill();
             console.log(`${project?.name} ended successfully`);
           }, 5000);
-          exec(`kill -9 ${watcher.pid}`);
-          exec(`kill -9 ${oldPid}`);
-          watcher.kill();
         }
       });
     }
