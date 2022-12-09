@@ -1,4 +1,4 @@
-import { IDomain, IProject } from "@brimble/models";
+import { IDomain, IProject, PROJECT_STATUS } from "@brimble/models";
 import axios from "axios";
 import fs from "fs";
 import { Project } from "@brimble/models";
@@ -103,17 +103,28 @@ export const keepInSyncWorker = async (job: Job) => {
       const watcher = spawn("tail", ["-f", deployLog]);
       watcher.stdout.on("data", async (data: any) => {
         const log = data.toString();
+        const logs = log.split("\n");
 
-        log.split("\n").forEach((line: any) => {
-          const lowerCaseLine = line.toLowerCase();
-          if (lowerCaseLine.includes("failed")) {
-            setTimeout(() => {
-              exec(`kill -9 ${watcher.pid}`);
-              exec(`kill -9 ${start.pid}`);
-              console.error(`Failed to start ${name}`);
-            }, 5000);
-          }
-        });
+        await Promise.all(
+          logs?.map(async (message: string) => {
+            message = message.trim().toLowerCase();
+            if (message.includes("failed")) {
+              await Project.findByIdAndUpdate(project?._id, {
+                status: PROJECT_STATUS.FAILED,
+              });
+
+              setTimeout(() => {
+                exec(`kill -9 ${watcher.pid}`);
+                exec(`kill -9 ${start.pid}`);
+                console.error(`Failed to start ${name}`);
+              }, 5000);
+
+              watcher.kill();
+
+              return;
+            }
+          })
+        );
 
         const pid = log.match(/PID: \d+/g);
         const url = log.match(/http:\/\/[a-zA-Z0-9-.]+:[0-9]+/g);
@@ -126,6 +137,7 @@ export const keepInSyncWorker = async (job: Job) => {
           await Project.findByIdAndUpdate(project?._id, {
             pid: pid?.[0].split(":")[1].trim(),
             port: port?.[0].split(":")[1].trim(),
+            status: PROJECT_STATUS.ACTIVE,
           });
           domains.forEach((domain: IDomain) => {
             proxy.register(domain.name, urlString, {
