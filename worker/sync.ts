@@ -43,10 +43,6 @@ export const keepInSync = async () => {
   );
 };
 
-setInterval(async () => {
-  await keepInSync();
-}, Number(process.env.SYNC_INTERVAL || 300000));
-
 export const keepInSyncWorker = async (job: Job) => {
   const {
     domains,
