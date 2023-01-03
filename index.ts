@@ -1,5 +1,5 @@
 import "reflect-metadata";
-import restana from "restana"
+import restana from "restana";
 import { proxy, socket } from "./config";
 import { connectToMongo, closeMongo } from "@brimble/models";
 import { container, delay } from "tsyringe";
@@ -9,27 +9,27 @@ import { keepInSync } from "./worker/sync";
 
 connectToMongo(process.env.MONGODB_URI || "");
 
-const service = restana({})
+const service = restana({});
 const sync = container.resolve(delay(() => KeepSyncQueue));
 const redisClient = container.resolve(delay(() => RedisClient));
 
 proxy.changeDefault();
 proxy.register(
   process.env.DOMAIN || "brimble.test",
-  `http://127.0.0.1:${process.env.PORT || 5000}`,
+  `http://127.0.0.1:${process.env.API_PORT || 5000}`,
   {}
 );
 
 sync.startWorker();
 
-service.get('/', (req, res) => {
+service.get("/", (_, res) => {
   return res.send({
     status: 200,
-    message: "Proxy server running"
-  })
-})
+    message: "Proxy server running",
+  });
+});
 
-service.post('/proxy', (req, res) => keepInSync())
+service.post("/proxy", (_, res) => keepInSync());
 
 socket.on("domain-register", ({ domain, ip, id }) => {
   proxy.unregister(domain);
