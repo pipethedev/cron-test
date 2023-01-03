@@ -29,7 +29,7 @@ service.get('/', (req, res) => {
   })
 })
 
-service.get('/proxy', (req, res) => keepInSync())
+service.post('/proxy', (req, res) => keepInSync())
 
 socket.on("domain-register", ({ domain, ip, id }) => {
   proxy.unregister(domain);
