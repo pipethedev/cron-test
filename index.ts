@@ -1,4 +1,5 @@
 import "reflect-metadata";
+import restana from "restana"
 import { proxy, socket } from "./config";
 import { connectToMongo, closeMongo } from "@brimble/models";
 import { container, delay } from "tsyringe";
@@ -8,6 +9,7 @@ import { keepInSync } from "./worker/sync";
 
 connectToMongo(process.env.MONGODB_URI || "");
 
+const service = restana({})
 const sync = container.resolve(delay(() => KeepSyncQueue));
 const redisClient = container.resolve(delay(() => RedisClient));
 
@@ -19,7 +21,15 @@ proxy.register(
 );
 
 sync.startWorker();
-keepInSync();
+
+service.get('/', (req, res) => {
+  return res.send({
+    status: 200,
+    message: "Proxy server running"
+  })
+})
+
+service.get('/proxy', (req, res) => keepInSync())
 
 socket.on("domain-register", ({ domain, ip, id }) => {
   proxy.unregister(domain);
@@ -38,6 +48,8 @@ socket.on("end", function () {
 process.on("SIGTERM", closeApp);
 process.on("SIGINT", closeApp);
 
+service.start(Number(process.env.PORT) || 3000);
+
 function closeApp() {
   console.log("Shutting down gracefully");
   socket.disconnect();
@@ -45,5 +57,6 @@ function closeApp() {
   sync.closeWorker();
   redisClient.close();
   closeMongo();
+  service.close();
   process.exit(0);
 }

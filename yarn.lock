@@ -2,6 +2,15 @@
 # yarn lockfile v1
 
 
+"0http@^3.4.2":
+  version "3.4.2"
+  resolved "https://registry.yarnpkg.com/0http/-/0http-3.4.2.tgz#ac0a8b4c71562480067201452caf8e1581acd924"
+  integrity sha512-zDbvsof0hqUdtHjcXE8pCzAmBGhNjwhypDfMKQf4sJz9QB9CMphgQzo/te2bGz7GjEuqiwXss7z7DJMt7IQo3Q==
+  dependencies:
+    lru-cache "^7.14.1"
+    regexparam "^2.0.1"
+    trouter "^3.2.0"
+
 "@brimble/models@^1.3.36":
   version "1.3.36"
   resolved "https://registry.yarnpkg.com/@brimble/models/-/models-1.3.36.tgz#de86605bd59c640059d946e59f408ee0b01650c5"
@@ -1224,6 +1233,11 @@ lru-cache@^6.0.0:
   dependencies:
     yallist "^4.0.0"
 
+lru-cache@^7.14.1:
+  version "7.14.1"
+  resolved "https://registry.yarnpkg.com/lru-cache/-/lru-cache-7.14.1.tgz#8da8d2f5f59827edb388e63e459ac23d6d408fea"
+  integrity sha512-ysxwsnTKdAx96aTRdhDOCQfDgbHnt8SK0KY8SEjO0wHinhWOFTESbjVCMPbU1uGXg/ch4lifqx0wfjOawU2+WA==
+
 luxon@^3.0.1:
   version "3.0.4"
   resolved "https://registry.yarnpkg.com/luxon/-/luxon-3.0.4.tgz#d179e4e9f05e092241e7044f64aaa54796b03929"
@@ -1779,6 +1793,16 @@ regexp-clone@1.0.0, regexp-clone@^1.0.0:
   resolved "https://registry.yarnpkg.com/regexp-clone/-/regexp-clone-1.0.0.tgz#222db967623277056260b992626354a04ce9bf63"
   integrity sha512-TuAasHQNamyyJ2hb97IuBEif4qBHGjPHBS64sZwytpLEqtBQ1gPJTnOaQ6qmpET16cK14kkjbazl6+p0RRv0yw==
 
+regexparam@^1.3.0:
+  version "1.3.0"
+  resolved "https://registry.yarnpkg.com/regexparam/-/regexparam-1.3.0.tgz#2fe42c93e32a40eff6235d635e0ffa344b92965f"
+  integrity sha512-6IQpFBv6e5vz1QAqI+V4k8P2e/3gRrqfCJ9FI+O1FLQTO+Uz6RXZEZOPmTJ6hlGj7gkERzY5BRCv09whKP96/g==
+
+regexparam@^2.0.1:
+  version "2.0.1"
+  resolved "https://registry.yarnpkg.com/regexparam/-/regexparam-2.0.1.tgz#c912f5dae371e3798100b3c9ce22b7414d0889fa"
+  integrity sha512-zRgSaYemnNYxUv+/5SeoHI0eJIgTL/A2pUtXUPLHQxUldagouJ9p+K6IbIZ/JiQuCEv2E2B1O11SjVQy3aMCkw==
+
 registry-auth-token@^4.0.0:
   version "4.2.1"
   resolved "https://registry.yarnpkg.com/registry-auth-token/-/registry-auth-token-4.2.1.tgz#6d7b4006441918972ccd5fedcd41dc322c79b250"
@@ -1835,6 +1859,13 @@ responselike@^1.0.2:
   integrity sha1-kYcg7ztjHFZCvgaPFa3lpG9Loec=
   dependencies:
     lowercase-keys "^1.0.0"
+
+restana@^4.9.7:
+  version "4.9.7"
+  resolved "https://registry.yarnpkg.com/restana/-/restana-4.9.7.tgz#c568a4dda5c143ae973718bc70c2e608b690cdec"
+  integrity sha512-eFhUq+WRqu40TpUxl3UwSRGLUKdeHBnEo+fshKP//CyWL2kwFxmQF4nhVoJVH5niComhjyPa9X4ItMOk72O9xQ==
+  dependencies:
+    "0http" "^3.4.2"
 
 rsa-compat@^2.0.8:
   version "2.0.8"
@@ -2129,6 +2160,13 @@ tr46@^3.0.0:
   integrity sha512-l7FvfAHlcmulp8kr+flpQZmVwtu7nfRV7NZujtN0OqES8EL4O4e0qqzL0DC5gAvx/ZC/9lk6rhcUwYvkBnBnYA==
   dependencies:
     punycode "^2.1.1"
+
+trouter@^3.2.0:
+  version "3.2.0"
+  resolved "https://registry.yarnpkg.com/trouter/-/trouter-3.2.0.tgz#a9c510fce21b8e659a28732c9de9d82871efe8df"
+  integrity sha512-rLLXbhTObLy2MBVjLC+jTnoIKw99n0GuJs9ov10J870vDw5qhTurPzsDrudNtBf5w/CZ9ctZy2p2IMmhGcel2w==
+  dependencies:
+    regexparam "^1.3.0"
 
 tslib@^1.9.3:
   version "1.14.1"
