@@ -62,7 +62,9 @@ export const proxy = {
       const host = req.headers.host;
       const requestId = req.headers["x-brimble-id"];
       res.statusCode = 404;
-      res.end(`Deployment not found for ${host}`);
+      res.redirect(
+        `https://brimble.io/404?requestId=${requestId}&host=${host}`
+      );
     });
   },
 };
