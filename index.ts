@@ -37,11 +37,9 @@ service.get("/", (_, res) => {
 const checkHeader = (req: any, res: any, next: any) => {
   const token = req.headers["x-proxy-token"];
 
-  if (token && token === process.env.SECRET) {
-    next();
-  } else {
-    res.send(401, { message: "Unauthorized" });
-  }
+  if (!(token && token === process.env.SECRET))
+    res.send({ status: 200, message: `Unauthorized request from ${req.ip}` });
+  else next();
 };
 
 service.post("/", checkHeader, (_, res) => keepInSync());
