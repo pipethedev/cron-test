@@ -19,6 +19,11 @@ proxy.register(
   `http://127.0.0.1:${process.env.API_PORT || 5000}`,
   {}
 );
+proxy.register(
+  `${process.env.DOMAIN}/proxy` || "brimble.test/proxy",
+  `http://127.0.0.1:${process.env.PORT || 3000}`,
+  {}
+);
 
 sync.startWorker();
 
@@ -29,7 +34,17 @@ service.get("/", (_, res) => {
   });
 });
 
-service.post("/proxy", (_, res) => keepInSync());
+const checkHeader = (req: any, res: any, next: any) => {
+  const token = req.headers["x-proxy-token"];
+
+  if (token && token === process.env.SECRET) {
+    next();
+  } else {
+    res.send(401, { message: "Unauthorized" });
+  }
+};
+
+service.post("/", checkHeader, (_, res) => keepInSync());
 
 socket.on("domain-register", ({ domain, ip, id }) => {
   proxy.unregister(domain);
