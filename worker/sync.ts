@@ -54,6 +54,8 @@ export const keepInSyncWorker = async (job: Job) => {
     if (!project || !name || name === "undefined") return;
     const shouldStart = await starter({ domains, port, dir, name });
     if (shouldStart) {
+      let done = false,
+        failed = false;
       console.log(`Running ${name}...`);
       const deployLog = `${dir}/deploy.log`;
 
@@ -92,6 +94,8 @@ export const keepInSyncWorker = async (job: Job) => {
           );
           exec(`kill -9 ${start.pid}`);
 
+          failed = true;
+
           throw new Error(`child process exited with code ${code as any}`);
         }
       });
@@ -116,7 +120,7 @@ export const keepInSyncWorker = async (job: Job) => {
                 watcher.kill();
               }, 5000);
 
-              throw new Error(`Failed to start ${name}`);
+              failed = true;
             }
           })
         );
@@ -153,9 +157,19 @@ export const keepInSyncWorker = async (job: Job) => {
             watcher.kill();
           }, 5000);
 
-          return `${project?.name} redeployed`;
+          done = true;
         }
       });
+
+      while (!done && !failed) {
+        await new Promise((resolve) => setTimeout(resolve, 1000));
+      }
+
+      if (done) {
+        return `${name} started successfully`;
+      } else if (failed) {
+        throw new Error(`${name} couldn't start`);
+      }
     }
   } catch (error: any) {
     console.log(`${name} couldn't start | ${error.message}`);
