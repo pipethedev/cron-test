@@ -93,6 +93,8 @@ export const keepInSyncWorker = async (job: Job) => {
             deployLog,
             `child process exited with code ${code as any}`
           );
+
+          throw new Error(`child process exited with code ${code as any}`);
         }
       });
 
@@ -117,7 +119,7 @@ export const keepInSyncWorker = async (job: Job) => {
 
               watcher.kill();
 
-              return;
+              throw new Error(`Failed to start ${name}`);
             }
           })
         );
@@ -153,11 +155,14 @@ export const keepInSyncWorker = async (job: Job) => {
             watcher.kill();
             console.log(`${project?.name} ended successfully`);
           }, 5000);
+
+          return `Started ${project?.name}`;
         }
       });
     }
   } catch (error: any) {
     console.log(`${name} couldn't start | ${error.message}`);
+    throw new Error(`${name} couldn't start | ${error.message}`);
   }
 };
 
