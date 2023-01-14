@@ -27,7 +27,6 @@ export const keepInSync = async () => {
 
       const start = await starter({ domains, port, dir, name });
       if (start) {
-        console.log(`Started ${name}`);
         await projectSync.execute({
           domains,
           port,
@@ -93,6 +92,7 @@ export const keepInSyncWorker = async (job: Job) => {
             deployLog,
             `child process exited with code ${code as any}`
           );
+          exec(`kill -9 ${start.pid}`);
 
           throw new Error(`child process exited with code ${code as any}`);
         }
@@ -115,9 +115,8 @@ export const keepInSyncWorker = async (job: Job) => {
                 exec(`kill -9 ${watcher.pid}`);
                 exec(`kill -9 ${start.pid}`);
                 console.error(`Failed to start ${name}`);
+                watcher.kill();
               }, 5000);
-
-              watcher.kill();
 
               throw new Error(`Failed to start ${name}`);
             }
@@ -152,11 +151,11 @@ export const keepInSyncWorker = async (job: Job) => {
           setTimeout(() => {
             exec(`kill -9 ${watcher.pid}`);
             exec(`kill -9 ${oldPid}`);
-            watcher.kill();
             console.log(`${project?.name} ended successfully`);
+            watcher.kill();
           }, 5000);
 
-          return `Started ${project?.name}`;
+          return `${project?.name} redeployed`;
         }
       });
     }

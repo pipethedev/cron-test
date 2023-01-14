@@ -23,11 +23,8 @@ export class KeepSyncQueue {
 
   async execute(data: any) {
     await (this.keepSyncQueue as Queue).add(this.queueName, data, {
-      attempts: 3,
-      backoff: {
-        type: "exponential",
-        delay: 5000,
-      },
+      removeOnComplete: true,
+      removeOnFail: true,
     });
   }
 
