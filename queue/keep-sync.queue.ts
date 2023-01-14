@@ -22,10 +22,11 @@ export class KeepSyncQueue {
   }
 
   async execute(data: any) {
-    await (this.keepSyncQueue as Queue).add(this.queueName, data, {
-      removeOnComplete: true,
-      removeOnFail: true,
-    });
+    await (this.keepSyncQueue as Queue).add(this.queueName, data);
+  }
+
+  async executeBulk(data: any[]) {
+    await (this.keepSyncQueue as Queue).addBulk(data);
   }
 
   async closeWorker() {

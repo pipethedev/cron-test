@@ -21,6 +21,7 @@ export const queue = (name: string) =>
     connection: redis.get().duplicate(),
     defaultJobOptions: {
       removeOnComplete: true,
+      removeOnFail: true,
     },
   });
 

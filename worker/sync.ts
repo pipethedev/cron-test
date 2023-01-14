@@ -13,9 +13,13 @@ const projectSync = container.resolve(delay(() => KeepSyncQueue));
 
 export const keepInSync = async () => {
   const projects = await Project.find().populate("domains");
-  await Promise.all(
-    projects.map(async (project: IProject) => {
-      const {
+  const data = projects.map((project: IProject) => {
+    const { domains, port, dir, outputDirectory, buildCommand, name, rootDir } =
+      project;
+
+    return {
+      name: "project_sync",
+      data: {
         domains,
         port,
         dir,
@@ -23,23 +27,12 @@ export const keepInSync = async () => {
         buildCommand,
         name,
         rootDir,
-      } = project;
+        project,
+      },
+    };
+  });
 
-      const start = await starter({ domains, port, dir, name });
-      if (start) {
-        await projectSync.execute({
-          domains,
-          port,
-          dir,
-          outputDirectory,
-          buildCommand,
-          name,
-          rootDir,
-          project,
-        });
-      }
-    })
-  );
+  await projectSync.executeBulk(data);
 };
 
 export const keepInSyncWorker = async (job: Job) => {
