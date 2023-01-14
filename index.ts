@@ -26,6 +26,7 @@ proxy.register(
 );
 
 sync.startWorker();
+keepInSync();
 
 service.get("/", (_, res) => {
   return res.send({

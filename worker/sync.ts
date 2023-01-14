@@ -29,6 +29,10 @@ export const keepInSync = async () => {
         rootDir,
         project,
       },
+      opts: {
+        priority: projects.indexOf(project) + 1,
+        delay: projects.indexOf(project) * 1000,
+      },
     };
   });
 
@@ -47,9 +51,9 @@ export const keepInSyncWorker = async (job: Job) => {
     project,
   } = job.data;
   try {
-    const start = await starter({ domains, port, dir, name });
-    if (start) {
-      console.log(`Executing ${name}...`);
+    console.log(`Syncing ${name}...`);
+    const shouldStart = await starter({ domains, port, dir, name });
+    if (shouldStart) {
       const deployLog = `${dir}/deploy.log`;
 
       const fileDir = rootDir ? path.join(dir, rootDir) : dir;
@@ -180,13 +184,8 @@ const starter = async (data: any) => {
       });
       return false;
     } catch (error) {
-      const { response, code } = error as any;
-      console.error({
-        error: { res: response?.data, code },
-        urlString,
-        name,
-        port,
-      });
+      const { code } = error as any;
+      console.error(`${name} is not running on ${port} -> ${code}`);
       return true;
     }
   }
