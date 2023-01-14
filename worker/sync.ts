@@ -51,9 +51,10 @@ export const keepInSyncWorker = async (job: Job) => {
     project,
   } = job.data;
   try {
-    console.log(`Syncing ${name}...`);
+    if (!project || !name || name === "undefined") return;
     const shouldStart = await starter({ domains, port, dir, name });
     if (shouldStart) {
+      console.log(`Running ${name}...`);
       const deployLog = `${dir}/deploy.log`;
 
       const fileDir = rootDir ? path.join(dir, rootDir) : dir;
