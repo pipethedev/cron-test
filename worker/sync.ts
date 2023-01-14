@@ -13,50 +13,31 @@ const projectSync = container.resolve(delay(() => KeepSyncQueue));
 
 export const keepInSync = async () => {
   const projects = await Project.find().populate("domains");
-  const data = projects.map((project: IProject) => {
-    const { domains, port, dir, outputDirectory, buildCommand, name, rootDir } =
-      project;
-
-    return {
-      name: "project_sync",
-      data: {
-        domains,
-        port,
-        dir,
-        outputDirectory,
-        buildCommand,
-        name,
-        rootDir,
-        project,
-      },
-      opts: {
-        priority: projects.indexOf(project) + 1,
-        delay: projects.indexOf(project) * 1000,
-      },
-    };
-  });
+  const data = projects.map((project: IProject) => ({
+    name: "project_sync",
+    data: { project },
+    opts: {
+      priority: projects.indexOf(project) + 1,
+      delay: projects.indexOf(project) * 1000,
+    },
+  }));
 
   await projectSync.executeBulk(data);
 };
 
 export const keepInSyncWorker = async (job: Job) => {
-  const {
-    domains,
-    port,
-    dir,
-    outputDirectory,
-    buildCommand,
-    name,
-    rootDir,
-    project,
-  } = job.data;
+  const { project } = job.data;
+  const { domains, port, dir, outputDirectory, buildCommand, name, rootDir } =
+    project;
+
   try {
     if (!project || !name || name === "undefined") return;
     const shouldStart = await starter({ domains, port, dir, name });
     if (shouldStart) {
       let done = false,
         failed = false;
-      console.log(`Running ${name}...`);
+
+      console.log(`Redeploying ${name}...`);
       const deployLog = `${dir}/deploy.log`;
 
       const fileDir = rootDir ? path.join(dir, rootDir) : dir;
@@ -92,11 +73,6 @@ export const keepInSyncWorker = async (job: Job) => {
             deployLog,
             `child process exited with code ${code as any}`
           );
-          exec(`kill -9 ${start.pid}`);
-
-          failed = true;
-
-          throw new Error(`child process exited with code ${code as any}`);
         }
       });
 
@@ -112,14 +88,6 @@ export const keepInSyncWorker = async (job: Job) => {
               await Project.findByIdAndUpdate(project?._id, {
                 status: PROJECT_STATUS.FAILED,
               });
-
-              setTimeout(() => {
-                exec(`kill -9 ${watcher.pid}`);
-                exec(`kill -9 ${start.pid}`);
-                console.error(`Failed to start ${name}`);
-                watcher.kill();
-              }, 5000);
-
               failed = true;
             }
           })
@@ -146,17 +114,6 @@ export const keepInSyncWorker = async (job: Job) => {
               domain: domain.name,
             });
           });
-
-          const oldPid = project.pid;
-          console.log(`${project?.name} redeployed`);
-
-          setTimeout(() => {
-            exec(`kill -9 ${watcher.pid}`);
-            exec(`kill -9 ${oldPid}`);
-            console.log(`${project?.name} ended successfully`);
-            watcher.kill();
-          }, 5000);
-
           done = true;
         }
       });
@@ -166,9 +123,18 @@ export const keepInSyncWorker = async (job: Job) => {
       }
 
       if (done) {
+        console.log(`${name} redeployed 🚀`);
+        exec(`kill -9 ${project.pid}`);
         return `${name} started successfully`;
       } else if (failed) {
+        console.error(`Redeployment failed | ${name}`);
         throw new Error(`${name} couldn't start`);
+      }
+
+      if (done || failed) {
+        exec(`kill -9 ${watcher.pid}`);
+        exec(`kill -9 ${start.pid}`);
+        watcher.kill();
       }
     }
   } catch (error: any) {
