@@ -132,9 +132,12 @@ export const keepInSyncWorker = async (job: Job) => {
       }
 
       if (done || failed) {
-        exec(`kill -9 ${watcher.pid}`);
-        exec(`kill -9 ${start.pid}`);
-        watcher.kill();
+        setTimeout(() => {
+          exec(`kill -9 ${watcher.pid}`);
+          exec(`kill -9 ${start.pid}`);
+          watcher.kill();
+          start.kill();
+        }, 5000);
       }
     }
   } catch (error: any) {
