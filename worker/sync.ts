@@ -131,17 +131,15 @@ export const keepInSyncWorker = async (job: Job) => {
         throw new Error(`${name} couldn't start`);
       }
 
-      if (done || failed) {
-        setTimeout(() => {
-          exec(`kill -9 ${watcher.pid}`);
-          exec(`kill -9 ${start.pid}`);
-          watcher.kill();
-          start.kill();
-        }, 5000);
-      }
+      setTimeout(() => {
+        exec(`kill -9 ${watcher.pid}`);
+        exec(`kill -9 ${start.pid}`);
+        watcher.kill();
+        start.kill();
+      }, 5000);
     }
   } catch (error: any) {
-    console.log(`${name} couldn't start | ${error.message}`);
+    console.error(`${name} couldn't start | ${error.message}`);
     throw new Error(`${name} couldn't start | ${error.message}`);
   }
 };
