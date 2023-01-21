@@ -122,6 +122,13 @@ export const keepInSyncWorker = async (job: Job) => {
         await new Promise((resolve) => setTimeout(resolve, 1000));
       }
 
+      setTimeout(() => {
+        exec(`kill -9 ${watcher.pid}`);
+        exec(`kill -9 ${start.pid}`);
+        watcher.kill();
+        start.kill();
+      }, 5000);
+
       if (done) {
         console.log(`${name} redeployed 🚀`);
         exec(`kill -9 ${project.pid}`);
@@ -130,13 +137,6 @@ export const keepInSyncWorker = async (job: Job) => {
         console.error(`Redeployment failed | ${name}`);
         throw new Error(`${name} couldn't start`);
       }
-
-      setTimeout(() => {
-        exec(`kill -9 ${watcher.pid}`);
-        exec(`kill -9 ${start.pid}`);
-        watcher.kill();
-        start.kill();
-      }, 5000);
     }
   } catch (error: any) {
     console.error(`${name} couldn't start | ${error.message}`);
