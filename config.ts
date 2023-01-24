@@ -34,16 +34,12 @@ export const proxy = {
         if (id) {
           socket.emit(`${id}-domain_mapped`, {
             message: "Domain mapped successfully",
-            domain: `${
-              process.env.NODE_ENV !== "production" ? "http" : "https"
-            }://${domain}`,
+            domain,
           });
         } else {
           socket.emit("domain-success", {
             message: "Proxy server started",
-            domain: `${
-              process.env.NODE_ENV !== "production" ? "http" : "https"
-            }://${domain}`,
+            domain,
           });
         }
       }
