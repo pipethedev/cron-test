@@ -118,9 +118,18 @@ export const keepInSyncWorker = async (job: Job) => {
         }
       });
 
-      while (!done && !failed) {
+      while (!done && !failed)
         await new Promise((resolve) => setTimeout(resolve, 1000));
-      }
+
+      await new Promise((resolve) =>
+        setTimeout(() => {
+          exec(`kill -9 ${watcher.pid}`);
+          exec(`kill -9 ${start.pid}`);
+          watcher.kill();
+          start.kill();
+          resolve(true);
+        }, 5000)
+      );
 
       if (done) {
         console.log(`${name} redeployed 🚀`);
@@ -130,15 +139,6 @@ export const keepInSyncWorker = async (job: Job) => {
         console.error(`Redeployment failed | ${name}`);
         failed = false;
       }
-
-      setTimeout(() => {
-        exec(`kill -9 ${watcher.pid}`);
-        exec(`kill -9 ${start.pid}`);
-        watcher.kill();
-        start.kill();
-      }, 5000);
-
-      return;
     }
   } catch (error: any) {
     console.error(`${name} couldn't start | ${error.message}`);
