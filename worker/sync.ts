@@ -125,8 +125,6 @@ export const keepInSyncWorker = async (job: Job) => {
         setTimeout(() => {
           exec(`kill -9 ${watcher.pid}`);
           exec(`kill -9 ${start.pid}`);
-          watcher.kill();
-          start.kill();
           resolve(true);
         }, 5000)
       );
