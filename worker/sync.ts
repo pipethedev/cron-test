@@ -47,19 +47,18 @@ export const keepInSyncWorker = async (job: Job) => {
           "brimble",
           "dev",
           `${fileDir}`,
-          `${port && `"-p ${port}"`}`,
+          `${port ? `"-p ${port}"` : ""}`,
           "-so",
-          buildCommand && "--build-command",
-          buildCommand && `"${buildCommand}"`,
-          outputDirectory && "--output-directory",
-          outputDirectory && `"${outputDirectory}"`,
+          buildCommand ? "--build-command" : "",
+          buildCommand ? `"${buildCommand}"` : "",
+          outputDirectory ? "--output-directory" : "",
+          outputDirectory ? `"${outputDirectory}"` : "",
           ">>",
           deployLog,
-          "2>&1&",
+          "2>&1",
+          "&",
         ],
-        {
-          shell: true,
-        }
+        { shell: true }
       );
 
       start.stderr.on("data", (data) => {
@@ -125,18 +124,18 @@ export const keepInSyncWorker = async (job: Job) => {
         setTimeout(() => {
           exec(`kill -9 ${watcher.pid}`);
           exec(`kill -9 ${start.pid}`);
+          if (done) {
+            console.log(`${name} redeployed 🚀`);
+            exec(`kill -9 ${project.pid}`);
+            exec(`pkill -f jest-worker/processChild.js`);
+            done = false;
+          }
           resolve(true);
-        }, 5000)
+        }, 10000)
       );
 
-      if (done) {
-        console.log(`${name} redeployed 🚀`);
-        exec(`kill -9 ${project.pid}`);
-        done = false;
-      } else if (failed) {
-        console.error(`Redeployment failed | ${name}`);
-        failed = false;
-      }
+      if (done) console.log(`Project ${project.name} deployed successfully`);
+      else console.log(`${project.name} deploy failed`);
     }
   } catch (error: any) {
     console.error(`${name} couldn't start | ${error.message}`);
