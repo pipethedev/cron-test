@@ -1,6 +1,6 @@
 import "reflect-metadata";
 import restana from "restana";
-import { proxy, socket } from "./config";
+import { proxy, socket, useRabbitMQ } from "./config";
 import { connectToMongo, closeMongo } from "@brimble/models";
 import { container, delay } from "tsyringe";
 import { KeepSyncQueue } from "./queue/keep-sync.queue";
@@ -45,14 +45,8 @@ const checkHeader = (req: any, res: any, next: any) => {
 
 service.post("/", checkHeader, (_, res) => keepInSync());
 
-socket.on("domain-register", ({ domain, ip, id }) => {
-  proxy.unregister(domain);
-  proxy.register(domain, ip, { id });
-});
 
-socket.on("domain-unregister", ({ domain }) => {
-  proxy.unregister(domain);
-});
+useRabbitMQ();
 
 socket.on("end", function () {
   socket.disconnect();

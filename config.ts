@@ -3,6 +3,7 @@ import dotenv from "dotenv";
 import { Queue } from "bullmq";
 import { RedisClient } from "./redis/redis-client";
 import { container, delay } from "tsyringe";
+import amqp from "amqplib";
 require("dotenv").config();
 
 const redbird = require("redbird")({
@@ -13,7 +14,8 @@ const redbird = require("redbird")({
 dotenv.config();
 
 const redis = container.resolve(delay(() => RedisClient));
-const API_URL = process.env.DOMAIN || `http://127.0.0.1:${process.env.API_PORT || 5000}`
+const API_URL =
+  process.env.DOMAIN || `http://127.0.0.1:${process.env.API_PORT || 5000}`;
 export const socket = io(API_URL);
 socket.on("connect", () => {
   socket.emit("identify", { app: "proxy" });
@@ -65,4 +67,24 @@ export const proxy = {
       res.end(`Deployment not found for ${host}`);
     });
   },
+};
+
+export const useRabbitMQ = async () => {
+  const connection = await amqp.connect(process.env.RABBITMQ_URI || "");
+  const channel = await connection.createChannel();
+
+  await channel.assertQueue("proxy", { durable: true });
+
+  channel.consume("proxy", (msg) => {
+    if (msg) {
+      const { event, data } = JSON.parse(msg.content.toString());
+      if (event === "domain-register") {
+        proxy.unregister(data.domain);
+        proxy.register(data.domain, data.ip, { id: data.id });
+      } else if (event === "domain-unregister") {
+        proxy.unregister(data.domain);
+      }
+      channel.ack(msg);
+    }
+  });
 };
