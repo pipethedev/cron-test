@@ -70,7 +70,7 @@ export const proxy = {
 };
 
 export const useRabbitMQ = async () => {
-  const connection = await amqp.connect(process.env.RABBITMQ_URI || "http://localhost");
+  const connection = await amqp.connect(process.env.RABBITMQ_URI || "amqp://localhost");
   const channel = await connection.createChannel();
 
   await channel.assertQueue("proxy", { durable: true });
