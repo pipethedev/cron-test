@@ -15,6 +15,9 @@ dotenv.config();
 const redis = container.resolve(delay(() => RedisClient));
 
 export const socket = io(`http://127.0.0.1:${process.env.API_PORT || 5000}`);
+socket.on("connect", () => {
+  socket.emit("identify", { app: "proxy" });
+});
 
 export const queue = (name: string) =>
   new Queue(name, {

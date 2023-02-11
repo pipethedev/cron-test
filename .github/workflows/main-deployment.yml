@@ -1,0 +1,27 @@
+name: Brimble Proxy Deployment
+
+on:
+  # Triggers the workflow on push or pull request events but only for the main branch
+  push:
+    branches: [main]
+
+  # Allows you to run this workflow manually from the Actions tab
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    name: Deploy to Server
+    runs-on: ubuntu-latest
+    steps:
+      - name: Git Pull on Server
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.BRIMBLE_HOST }}
+          username: ${{ secrets.BRIMBLE_USER }}
+          key: ${{ secrets.BRIMBLE_KEY }}
+          script: |
+            cd /home/abraham/proxy
+            git reset --hard && git pull
+            npm install -g yarn
+            yarn && yarn build
+            yarn pm2:reload
