@@ -13,8 +13,8 @@ const redbird = require("redbird")({
 dotenv.config();
 
 const redis = container.resolve(delay(() => RedisClient));
-
-export const socket = io(`http://127.0.0.1:${process.env.API_PORT || 5000}`);
+const API_URL = process.env.DOMAIN || `http://127.0.0.1:${process.env.API_PORT || 5000}`
+export const socket = io(API_URL);
 socket.on("connect", () => {
   socket.emit("identify", { app: "proxy" });
 });
