@@ -28,7 +28,7 @@ proxy.register(
 
 sync.startWorker();
 keepInSync();
-schedule();
+// schedule();
 useRabbitMQ();
 
 service.get("/", (_, res) => {
