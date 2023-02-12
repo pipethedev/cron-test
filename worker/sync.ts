@@ -36,7 +36,7 @@ export const keepInSyncWorker = async (job: Job) => {
     name,
     rootDir,
     _id,
-    log
+    log,
   } = project;
 
   try {
@@ -102,7 +102,7 @@ export const keepInSyncWorker = async (job: Job) => {
             if (message.includes("failed")) {
               const status = PROJECT_STATUS.FAILED;
               await Project.findByIdAndUpdate(_id, { status });
-              await Log.findOneAndUpdate(log._id, { status });
+              log && (await Log.findOneAndUpdate(log._id, { status }));
               failed = true;
             }
           })
@@ -121,9 +121,10 @@ export const keepInSyncWorker = async (job: Job) => {
             port: port?.[0].split(":")[1].trim(),
             status: PROJECT_STATUS.ACTIVE,
           });
-          await Log.findOneAndUpdate(log._id, {
-            status: PROJECT_STATUS.ACTIVE,
-          });
+          log &&
+            (await Log.findOneAndUpdate(log._id, {
+              status: PROJECT_STATUS.ACTIVE,
+            }));
           domains.forEach((domain: IDomain) => {
             proxy.register(domain.name, urlString, {
               isWatchMode: true,
@@ -187,8 +188,7 @@ const starter = async (data: any) => {
       });
       return false;
     } catch (error) {
-      const { code } = error as any;
-      console.error(`${name} is not running on ${port} -> ${code}`);
+      console.error(`${name} is not running on ${port}`);
       return true;
     }
   }
