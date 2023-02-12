@@ -37,6 +37,7 @@ export const keepInSyncWorker = async (job: Job) => {
     rootDir,
     _id,
     log,
+    pid: oldPid,
   } = project;
 
   try {
@@ -149,7 +150,7 @@ export const keepInSyncWorker = async (job: Job) => {
           exec(`kill -9 ${start.pid}`);
           if (done) {
             console.log(`${name} redeployed 🚀`);
-            exec(`kill -9 ${project.pid}`);
+            exec(`kill -9 ${oldPid}`);
             exec(`pkill -f jest-worker/processChild.js`);
           }
           resolve(true);
@@ -183,14 +184,15 @@ const starter = async (data: any) => {
     try {
       await axios(urlString);
 
-      if (log.status === PROJECT_STATUS.PENDING) return true;
+      if (log && log.status === PROJECT_STATUS.PENDING) return true;
 
       domains.forEach((domain: IDomain) => {
         proxy.register(domain.name, urlString, { isWatchMode: true });
       });
       return false;
     } catch (error) {
-      console.error(`${name} is not running on ${port}`);
+      const { message } = error as Error;
+      console.error(`${name} is not running reason: ${message}`);
       return true;
     }
   }
