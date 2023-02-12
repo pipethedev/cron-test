@@ -20,20 +20,20 @@
     debug "^4.3.4"
     safe-buffer "~5.1.2"
 
-"@brimble/models@^1.3.36":
-  version "1.3.36"
-  resolved "https://registry.yarnpkg.com/@brimble/models/-/models-1.3.36.tgz#de86605bd59c640059d946e59f408ee0b01650c5"
-  integrity sha512-H25ok19YNwX/aJejuArKHXraY8JXcnXquZaZAXYaTgrsxhYy5zWGCcnGTwxGAWEpI/9Vz6/ktRYiCxIwMO+bNw==
+"@brimble/models@^1.4.13":
+  version "1.4.13"
+  resolved "https://registry.yarnpkg.com/@brimble/models/-/models-1.4.13.tgz#04ce6f37d1f0cb4513173ca7cba59f59d7ca3b94"
+  integrity sha512-ZgEKHra7jA85VSj+ssVnCR+EkzOJowdjqVGU2v0nLChoeWA8KipXLQTgdUMC5zBt8HYOJiI+x1y3UmpkupAN5Q==
   dependencies:
-    "@brimble/utils" "^1.3.8"
+    "@brimble/utils" "^1.4.7"
     dotenv "^8.2.0"
     mongoose "^5.8.11"
     uuid "^8.3.2"
 
-"@brimble/utils@^1.3.8":
-  version "1.3.8"
-  resolved "https://registry.yarnpkg.com/@brimble/utils/-/utils-1.3.8.tgz#80e0758cfdd92e12a53d97b8286af78444e0f318"
-  integrity sha512-zyJSU2aLjIHwsp12yl4xo67tv7I09Gd8lEow5tzjWuWGXyjIKhXX3UTzWlhVh8/NGnZyrIheKHhH7kWrW5HRRg==
+"@brimble/utils@^1.4.7":
+  version "1.4.7"
+  resolved "https://registry.yarnpkg.com/@brimble/utils/-/utils-1.4.7.tgz#e397b3a5d9450e57deb1dc66fc226d4db5c3d867"
+  integrity sha512-/WychMQldKg+jvewL86eI22Dae+/xn7T1LrtZ+sDhRsOuGmtYkIFYc95bi5N7fzlUJ6Mg8JD3tGOgzNLJWM4jA==
   dependencies:
     pino "^8.6.0"
     pino-pretty "^9.1.0"

@@ -4,12 +4,13 @@ import fs from "fs";
 import { Project } from "@brimble/models";
 import { spawn, exec } from "child_process";
 import path from "path";
-import { proxy, socket } from "../config";
+import { proxy, redis, socket } from "../config";
 import { container, delay } from "tsyringe";
 import { KeepSyncQueue } from "../queue/keep-sync.queue";
 import { Job } from "bullmq";
 
 const projectSync = container.resolve(delay(() => KeepSyncQueue));
+const client = redis.get();
 
 export const keepInSync = async () => {
   const projects = await Project.find().populate("domains");
@@ -32,7 +33,13 @@ export const keepInSyncWorker = async (job: Job) => {
 
   try {
     if (!project || !name || name === "undefined") return;
-    const shouldStart = await starter({ domains, port, dir, name });
+    const shouldStart = await starter({
+      domains,
+      port,
+      dir,
+      name,
+      uuid: project.uuid,
+    });
     if (shouldStart) {
       let done = false,
         failed = false;
@@ -144,7 +151,9 @@ export const keepInSyncWorker = async (job: Job) => {
 };
 
 const starter = async (data: any) => {
-  const { domains, port, dir, name } = data;
+  const { domains, port, dir, name, uuid } = data;
+  const deployData = await client.get(`${uuid}:deploy`);
+  const { status } = JSON.parse(deployData || "{}");
 
   if (!name) return false;
 
@@ -160,6 +169,8 @@ const starter = async (data: any) => {
     try {
       await axios(urlString);
 
+      if(status === PROJECT_STATUS.PENDING) return true;
+      
       domains.forEach((domain: IDomain) => {
         proxy.register(domain.name, urlString, { isWatchMode: true });
       });

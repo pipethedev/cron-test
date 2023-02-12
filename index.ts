@@ -6,6 +6,7 @@ import { container, delay } from "tsyringe";
 import { KeepSyncQueue } from "./queue/keep-sync.queue";
 import { RedisClient } from "./redis/redis-client";
 import { keepInSync } from "./worker/sync";
+import schedule from "./queue/scheduler";
 
 connectToMongo(process.env.MONGODB_URI || "");
 
@@ -27,6 +28,8 @@ proxy.register(
 
 sync.startWorker();
 keepInSync();
+schedule();
+useRabbitMQ();
 
 service.get("/", (_, res) => {
   return res.send({
@@ -34,19 +37,6 @@ service.get("/", (_, res) => {
     message: "Proxy server running",
   });
 });
-
-const checkHeader = (req: any, res: any, next: any) => {
-  const token = req.headers["x-proxy-token"];
-
-  if (!(token && token === process.env.SECRET))
-    res.send({ status: 200, message: `Unauthorized request from ${req.ip}` });
-  else next();
-};
-
-service.post("/", checkHeader, (_, res) => keepInSync());
-
-
-useRabbitMQ();
 
 socket.on("end", function () {
   socket.disconnect();
