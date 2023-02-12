@@ -1,15 +1,10 @@
-import { Worker } from "bullmq";
-import { queue } from "../config";
+import cron from "node-cron";
 import { keepInSync } from "../worker/sync";
 
-const scheduleQueue = queue("scheduler");
+const useScheduler = () => {
+  const scheduler = cron.schedule("*/30 * * * * *", () => keepInSync());
 
-new Worker("scheduler", async (job) => keepInSync());
-
-const schedule = async () => {
-  await scheduleQueue.add("scheduler", {}, { repeat: { pattern: "*/5 * * * *" } });
-
-  console.log("Scheduler started");
+  return scheduler;
 };
 
-export default schedule;
+export default useScheduler;

@@ -8,7 +8,7 @@ const redis = container.resolve(delay(() => RedisClient));
 
 @injectable()
 export class KeepSyncQueue {
-  private queueName: string = "project_sync";
+  public queueName: string = "project_sync";
   private keepSyncQueue = queue(this.queueName);
   private worker: Worker = new Worker(this.queueName, keepInSyncWorker, {
     autorun: false,

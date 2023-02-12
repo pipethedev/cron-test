@@ -14,7 +14,7 @@ const projectSync = container.resolve(delay(() => KeepSyncQueue));
 export const keepInSync = async () => {
   const projects = await Project.find().populate(["domains", "log"]);
   const data = projects.map((project: IProject) => ({
-    name: "project_sync",
+    name: projectSync.queueName,
     data: { project },
     opts: {
       priority: projects.indexOf(project) + 1,

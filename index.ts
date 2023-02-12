@@ -6,7 +6,7 @@ import { container, delay } from "tsyringe";
 import { KeepSyncQueue } from "./queue/keep-sync.queue";
 import { RedisClient } from "./redis/redis-client";
 import { keepInSync } from "./worker/sync";
-import schedule from "./queue/scheduler";
+import useScheduler from "./queue/scheduler";
 
 connectToMongo(process.env.MONGODB_URI || "");
 
@@ -28,13 +28,21 @@ proxy.register(
 
 sync.startWorker();
 keepInSync();
-// schedule();
+useScheduler();
 useRabbitMQ();
 
 service.get("/", (_, res) => {
   return res.send({
     status: 200,
     message: "Proxy server running",
+  });
+});
+
+service.post("/stop", (_, res) => {
+  useScheduler().stop();
+  return res.send({
+    status: 200,
+    message: "Scheduler stopped",
   });
 });
 
