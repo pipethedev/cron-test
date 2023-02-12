@@ -108,8 +108,8 @@ export const keepInSyncWorker = async (job: Job) => {
           })
         );
 
-        const pid = log.match(/PID: \d+/g);
-        const url = log.match(/http:\/\/[a-zA-Z0-9-.]+:[0-9]+/g);
+        const pid = buff.match(/PID: \d+/g);
+        const url = buff.match(/http:\/\/[a-zA-Z0-9-.]+:[0-9]+/g);
         if (url && pid) {
           let urlString = url[0];
           const port = urlString.match(/:[0-9]+/g);
