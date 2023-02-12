@@ -16,7 +16,7 @@ dotenv.config();
 const redis = container.resolve(delay(() => RedisClient));
 const API_URL =
   process.env.DOMAIN || `http://127.0.0.1:${process.env.API_PORT || 5000}`;
-export const socket = io(API_URL);
+export const socket = io(API_URL, { transports: ["websocket"] });
 socket.on("connect", () => {
   socket.emit("identify", { app: "proxy" });
 });
@@ -70,7 +70,9 @@ export const proxy = {
 };
 
 export const useRabbitMQ = async () => {
-  const connection = await amqp.connect(process.env.RABBITMQ_URI || "amqp://localhost");
+  const connection = await amqp.connect(
+    process.env.RABBITMQ_URI || "amqp://localhost"
+  );
   const channel = await connection.createChannel();
 
   await channel.assertQueue("proxy", { durable: true });
