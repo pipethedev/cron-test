@@ -102,7 +102,9 @@ export const keepInSyncWorker = async (job: Job) => {
             if (message.includes("failed")) {
               const status = PROJECT_STATUS.FAILED;
               await Project.findByIdAndUpdate(_id, { status });
-              log && (await Log.findOneAndUpdate(log._id, { status }));
+              if (log) {
+                await Log.findOneAndUpdate(log._id, { status });
+              }
               failed = true;
             }
           })
@@ -121,10 +123,11 @@ export const keepInSyncWorker = async (job: Job) => {
             port: port?.[0].split(":")[1].trim(),
             status: PROJECT_STATUS.ACTIVE,
           });
-          log &&
-            (await Log.findOneAndUpdate(log._id, {
+          if (log) {
+            await Log.findOneAndUpdate(log._id, {
               status: PROJECT_STATUS.ACTIVE,
-            }));
+            });
+          }
           domains.forEach((domain: IDomain) => {
             proxy.register(domain.name, urlString, {
               isWatchMode: true,
@@ -148,14 +151,13 @@ export const keepInSyncWorker = async (job: Job) => {
             console.log(`${name} redeployed 🚀`);
             exec(`kill -9 ${project.pid}`);
             exec(`pkill -f jest-worker/processChild.js`);
-            done = false;
           }
           resolve(true);
         }, 10000)
       );
 
       if (done) console.log(`Project ${project.name} deployed successfully`);
-      else console.log(`${project.name} deploy failed`);
+      else if (failed) console.log(`${project.name} deploy failed`);
     }
   } catch (error: any) {
     console.error(`${name} couldn't start | ${error.message}`);
