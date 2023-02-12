@@ -171,8 +171,8 @@ export const keepInSyncWorker = async (job: Job) => {
       else if (failed) console.log(`${project.name} deploy failed`);
     }
   } catch (error: any) {
-    console.error(`${name} couldn't start | ${error.message}`);
-    throw new Error(`${name} couldn't start | ${error.message}`);
+    console.error(`Couldn't start | ${error.message}`);
+    throw new Error(`Couldn't start | ${error.message}`);
   }
 };
 
