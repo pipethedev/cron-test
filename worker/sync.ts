@@ -1,19 +1,18 @@
-import { IDomain, IProject, PROJECT_STATUS } from "@brimble/models";
+import { IDomain, IProject, Log, PROJECT_STATUS } from "@brimble/models";
 import axios from "axios";
 import fs from "fs";
 import { Project } from "@brimble/models";
 import { spawn, exec } from "child_process";
 import path from "path";
-import { proxy, redis, socket } from "../config";
+import { proxy, socket } from "../config";
 import { container, delay } from "tsyringe";
 import { KeepSyncQueue } from "../queue/keep-sync.queue";
 import { Job } from "bullmq";
 
 const projectSync = container.resolve(delay(() => KeepSyncQueue));
-const client = redis.get();
 
 export const keepInSync = async () => {
-  const projects = await Project.find().populate("domains");
+  const projects = await Project.find().populate(["domains", "log"]);
   const data = projects.map((project: IProject) => ({
     name: "project_sync",
     data: { project },
@@ -28,8 +27,17 @@ export const keepInSync = async () => {
 
 export const keepInSyncWorker = async (job: Job) => {
   const { project } = job.data;
-  const { domains, port, dir, outputDirectory, buildCommand, name, rootDir } =
-    project;
+  const {
+    domains,
+    port,
+    dir,
+    outputDirectory,
+    buildCommand,
+    name,
+    rootDir,
+    _id,
+    log
+  } = project;
 
   try {
     if (!project || !name || name === "undefined") return;
@@ -38,7 +46,8 @@ export const keepInSyncWorker = async (job: Job) => {
       port,
       dir,
       name,
-      uuid: project.uuid,
+      log,
+      id: _id,
     });
     if (shouldStart) {
       let done = false,
@@ -84,16 +93,16 @@ export const keepInSyncWorker = async (job: Job) => {
 
       const watcher = spawn("tail", ["-f", deployLog]);
       watcher.stdout.on("data", async (data: any) => {
-        const log = data.toString();
-        const logs = log.split("\n");
+        const buff = data.toString();
+        const messages = buff.split("\n");
 
         await Promise.all(
-          logs?.map(async (message: string) => {
+          messages?.map(async (message: string) => {
             message = message.trim().toLowerCase();
             if (message.includes("failed")) {
-              await Project.findByIdAndUpdate(project?._id, {
-                status: PROJECT_STATUS.FAILED,
-              });
+              const status = PROJECT_STATUS.FAILED;
+              await Project.findByIdAndUpdate(_id, { status });
+              await Log.findOneAndUpdate(log._id, { status });
               failed = true;
             }
           })
@@ -110,6 +119,9 @@ export const keepInSyncWorker = async (job: Job) => {
           await Project.findByIdAndUpdate(project?._id, {
             pid: pid?.[0].split(":")[1].trim(),
             port: port?.[0].split(":")[1].trim(),
+            status: PROJECT_STATUS.ACTIVE,
+          });
+          await Log.findOneAndUpdate(log._id, {
             status: PROJECT_STATUS.ACTIVE,
           });
           domains.forEach((domain: IDomain) => {
@@ -142,7 +154,7 @@ export const keepInSyncWorker = async (job: Job) => {
       );
 
       if (done) console.log(`Project ${project.name} deployed successfully`);
-      else console.log(`${project.name} deploy failed`);
+      else console.error(`${project.name} deploy failed`);
     }
   } catch (error: any) {
     console.error(`${name} couldn't start | ${error.message}`);
@@ -151,9 +163,7 @@ export const keepInSyncWorker = async (job: Job) => {
 };
 
 const starter = async (data: any) => {
-  const { domains, port, dir, name, uuid } = data;
-  const deployData = await client.get(`${uuid}:deploy`);
-  const { status } = JSON.parse(deployData || "{}");
+  const { domains, port, dir, name, log, id } = data;
 
   if (!name) return false;
 
@@ -164,13 +174,14 @@ const starter = async (data: any) => {
     return false;
   } else if (!fs.existsSync(dir)) {
     console.error(`${dir} does not exist -> ${name}`);
+    await Project.findByIdAndDelete(id);
     return false;
   } else {
     try {
       await axios(urlString);
 
-      if(status === PROJECT_STATUS.PENDING) return true;
-      
+      if (log.status === PROJECT_STATUS.PENDING) return true;
+
       domains.forEach((domain: IDomain) => {
         proxy.register(domain.name, urlString, { isWatchMode: true });
       });
