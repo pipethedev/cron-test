@@ -8,40 +8,43 @@ import { proxy, socket } from "../config";
 import { container, delay } from "tsyringe";
 import { KeepSyncQueue } from "../queue/keep-sync.queue";
 import { Job } from "bullmq";
+import { LeanDocument } from "mongoose";
 
 const projectSync = container.resolve(delay(() => KeepSyncQueue));
 
 export const keepInSync = async () => {
-  const projects = await Project.find().populate(["domains", "log"]);
-  const data = projects.map((project: IProject) => ({
+  const projects = await Project.find().lean().exec();
+  const data = projects.map((project: LeanDocument<IProject>) => ({
     name: projectSync.queueName,
-    data: { project },
-    opts: {
-      priority: projects.indexOf(project) + 1,
-      delay: projects.indexOf(project) * 1000,
-    },
+    data: { id: project._id },
   }));
 
   await projectSync.executeBulk(data);
 };
 
 export const keepInSyncWorker = async (job: Job) => {
-  const { project } = job.data;
-  const {
-    domains,
-    port,
-    dir,
-    outputDirectory,
-    buildCommand,
-    name,
-    rootDir,
-    _id,
-    log,
-    pid: oldPid,
-  } = project;
+  const { id } = job.data;
 
   try {
-    if (!project || !name || name === "undefined") return;
+    if (!id || id === "undefined") return;
+
+    const project = await Project.findById(id).populate(["domains", "log"]);
+
+    if (!project) return;
+
+    const {
+      domains,
+      port,
+      dir,
+      outputDirectory,
+      buildCommand,
+      name,
+      rootDir,
+      _id,
+      log,
+      pid: oldPid,
+    } = project;
+
     const shouldStart = await starter({
       domains,
       port,
@@ -56,6 +59,7 @@ export const keepInSyncWorker = async (job: Job) => {
 
       console.log(`Redeploying ${name}...`);
       const deployLog = `${dir}/deploy.log`;
+      const startTime = new Date().toISOString();
 
       const fileDir = rootDir ? path.join(dir, rootDir) : dir;
       const start = spawn(
@@ -103,9 +107,13 @@ export const keepInSyncWorker = async (job: Job) => {
             if (message.includes("failed")) {
               const status = PROJECT_STATUS.FAILED;
               await Project.findByIdAndUpdate(_id, { status });
-              if (log) {
-                await Log.findOneAndUpdate(log._id, { status });
-              }
+              log &&
+                (await Log.findByIdAndUpdate(log._id, {
+                  status,
+                  startTime,
+                  endTime: new Date().toISOString(),
+                }));
+
               failed = true;
             }
           })
@@ -124,11 +132,13 @@ export const keepInSyncWorker = async (job: Job) => {
             port: port?.[0].split(":")[1].trim(),
             status: PROJECT_STATUS.ACTIVE,
           });
-          if (log) {
-            await Log.findOneAndUpdate(log._id, {
+          log &&
+            (await Log.findByIdAndUpdate(log._id, {
               status: PROJECT_STATUS.ACTIVE,
-            });
-          }
+              startTime,
+              endTime: new Date().toISOString(),
+            }));
+
           domains.forEach((domain: IDomain) => {
             proxy.register(domain.name, urlString, {
               isWatchMode: true,
