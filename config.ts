@@ -80,6 +80,7 @@ export const useRabbitMQ = async () => {
   channel.consume("proxy", (msg) => {
     if (msg) {
       const { event, data } = JSON.parse(msg.content.toString());
+      console.log({ event, data })
       if (event === "domain-register") {
         proxy.unregister(data.domain);
         proxy.register(data.domain, data.ip, { id: data.id });
