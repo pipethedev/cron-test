@@ -26,6 +26,7 @@ export class KeepSyncQueue {
   }
 
   async executeBulk(data: any[]) {
+    await (this.keepSyncQueue as Queue).drain();
     await (this.keepSyncQueue as Queue).addBulk(data);
   }
 
