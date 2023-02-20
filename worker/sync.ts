@@ -188,7 +188,6 @@ const starter = async (data: any) => {
     return false;
   } else if (!fs.existsSync(dir)) {
     console.error(`${dir} does not exist -> ${name}`);
-    await Project.findByIdAndDelete(id);
     return false;
   } else {
     try {
