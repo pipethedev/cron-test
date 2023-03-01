@@ -171,7 +171,7 @@ const keepInSyncWorker = async (job: Job) => {
   }
 };
 
-const projectSync = new QueueClass("project-sync", keepInSyncWorker);
+export const projectSync = new QueueClass("project-sync", keepInSyncWorker);
 
 export const keepInSync = async () => {
   const projects = await Project.find().lean().exec();

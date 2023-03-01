@@ -4,16 +4,14 @@ import { proxy, socket, useRabbitMQ } from "./config";
 import { connectToMongo, closeMongo } from "@brimble/models";
 import { container, delay } from "tsyringe";
 import { RedisClient } from "./redis/redis-client";
-import { keepInSync } from "./worker/sync";
+import { keepInSync, projectSync } from "./worker/sync";
 import useScheduler from "./queue/scheduler";
 import { rabbitMQ } from "./rabbitmq";
-import { QueueClass } from "./queue";
 
 connectToMongo(process.env.MONGODB_URI || "");
 
 const service = restana({});
 const redisClient = container.resolve(delay(() => RedisClient));
-const queue = container.resolve(delay(() => QueueClass));
 
 proxy.changeDefault();
 proxy.register(
@@ -69,6 +67,6 @@ function closeApp() {
   rabbitMQ.close();
   closeMongo();
   service.close();
-  queue.closeWorker();
+  projectSync.closeWorker();
   process.exit(0);
 }
