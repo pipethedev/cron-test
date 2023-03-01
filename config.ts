@@ -3,7 +3,7 @@ import dotenv from "dotenv";
 import { Queue } from "bullmq";
 import { RedisClient } from "./redis/redis-client";
 import { container, delay } from "tsyringe";
-import amqp from "amqplib";
+import { rabbitMQ } from "./rabbitmq";
 require("dotenv").config();
 
 const redbird = require("redbird")({
@@ -69,25 +69,34 @@ export const proxy = {
   },
 };
 
-export const useRabbitMQ = async () => {
-  const connection = await amqp.connect(
-    process.env.RABBITMQ_URI || "amqp://localhost"
-  );
-  const channel = await connection.createChannel();
+export const useRabbitMQ = async (
+  name: string,
+  type: "send" | "consume",
+  message?: string
+) => {
+  try {
+    const connection = rabbitMQ;
+    await connection.connect();
 
-  await channel.assertQueue("proxy", { durable: true });
-
-  channel.consume("proxy", (msg) => {
-    if (msg) {
-      const { event, data } = JSON.parse(msg.content.toString());
-      console.log({ event, data })
-      if (event === "domain-register") {
-        proxy.unregister(data.domain);
-        proxy.register(data.domain, data.ip, { id: data.id });
-      } else if (event === "domain-unregister") {
-        proxy.unregister(data.domain);
-      }
-      channel.ack(msg);
+    if (type === "send" && message) {
+      await connection.sendMessage(name, message);
+    } else if (type === "consume") {
+      await connection.consume(name, (msg) => {
+        console.log(`Received message from ${name} queue: ${msg}`);
+        if (msg) {
+          const { event, data } = JSON.parse(msg.toString());
+          console.log({ event, data });
+          if (event === "domain-register") {
+            proxy.unregister(data.domain);
+            proxy.register(data.domain, data.ip, { id: data.id });
+          }
+          if (event === "domain-unregister") proxy.unregister(data.domain);
+        }
+      });
+    } else {
+      throw new Error("Invalid type");
     }
-  });
+  } catch (err) {
+    console.error(err);
+  }
 };

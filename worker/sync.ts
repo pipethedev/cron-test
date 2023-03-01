@@ -4,25 +4,12 @@ import fs from "fs";
 import { Project } from "@brimble/models";
 import { spawn, exec } from "child_process";
 import path from "path";
-import { proxy, socket } from "../config";
-import { container, delay } from "tsyringe";
-import { KeepSyncQueue } from "../queue/keep-sync.queue";
-import { Job } from "bullmq";
+import { proxy, socket, useRabbitMQ } from "../config";
+import { QueueClass } from "../queue";
+import { Job, UnrecoverableError } from "bullmq";
 import { LeanDocument } from "mongoose";
 
-const projectSync = container.resolve(delay(() => KeepSyncQueue));
-
-export const keepInSync = async () => {
-  const projects = await Project.find().lean().exec();
-  const data = projects.map((project: LeanDocument<IProject>) => ({
-    name: projectSync.queueName,
-    data: { id: project._id },
-  }));
-
-  await projectSync.executeBulk(data);
-};
-
-export const keepInSyncWorker = async (job: Job) => {
+const keepInSyncWorker = async (job: Job) => {
   const { id } = job.data;
 
   try {
@@ -167,17 +154,39 @@ export const keepInSyncWorker = async (job: Job) => {
         }, 10000)
       );
 
-      if (done) console.log(`Project ${project.name} deployed successfully`);
-      else if (failed) console.log(`${project.name} deploy failed`);
+      if (done) {
+        console.log(`Project ${project.name} deployed successfully`);
+        return true;
+      } else if (failed) {
+        console.log(`${project.name} deploy failed`);
+        throw new UnrecoverableError("Deploy failed");
+      } else {
+        console.log(`${project.name} deploy timed out`);
+        throw new UnrecoverableError("Deploy timed out");
+      }
     }
   } catch (error: any) {
     console.error(`Couldn't start | ${error.message}`);
-    throw new Error(`Couldn't start | ${error.message}`);
+    throw new UnrecoverableError(`Couldn't start | ${error.message}`);
   }
 };
 
+const projectSync = new QueueClass("project-sync", keepInSyncWorker);
+
+export const keepInSync = async () => {
+  const projects = await Project.find().lean().exec();
+  const data = projects.map((project: LeanDocument<IProject>) => ({
+    name: "project-sync",
+    data: { id: project._id },
+  }));
+
+  console.log("Syncing Project...");
+
+  await projectSync.executeBulk(data);
+};
+
 const starter = async (data: any) => {
-  const { domains, port, dir, name, log, id } = data;
+  const { domains, port, dir, name, log } = data;
 
   if (!name) return false;
 
@@ -197,6 +206,14 @@ const starter = async (data: any) => {
 
       domains.forEach((domain: IDomain) => {
         proxy.register(domain.name, urlString, { isWatchMode: true });
+        useRabbitMQ(
+          "proxy",
+          "send",
+          JSON.stringify({
+            event: "domain:clear_cache",
+            data: { domain: domain.name },
+          })
+        );
       });
       return false;
     } catch (error) {

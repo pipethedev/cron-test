@@ -3,16 +3,17 @@ import restana from "restana";
 import { proxy, socket, useRabbitMQ } from "./config";
 import { connectToMongo, closeMongo } from "@brimble/models";
 import { container, delay } from "tsyringe";
-import { KeepSyncQueue } from "./queue/keep-sync.queue";
 import { RedisClient } from "./redis/redis-client";
 import { keepInSync } from "./worker/sync";
 import useScheduler from "./queue/scheduler";
+import { rabbitMQ } from "./rabbitmq";
+import { QueueClass } from "./queue";
 
 connectToMongo(process.env.MONGODB_URI || "");
 
 const service = restana({});
-const sync = container.resolve(delay(() => KeepSyncQueue));
 const redisClient = container.resolve(delay(() => RedisClient));
+const queue = container.resolve(delay(() => QueueClass));
 
 proxy.changeDefault();
 proxy.register(
@@ -26,10 +27,14 @@ proxy.register(
   {}
 );
 
-sync.startWorker();
 keepInSync();
 useScheduler();
-useRabbitMQ();
+useRabbitMQ("main", "consume");
+useRabbitMQ(
+  "proxy",
+  "send",
+  JSON.stringify({ event: "Test", data: "Working" })
+);
 
 service.get("/", (_, res) => {
   return res.send({
@@ -60,9 +65,10 @@ function closeApp() {
   console.log("Shutting down gracefully");
   socket.disconnect();
   socket.close();
-  sync.closeWorker();
   redisClient.close();
+  rabbitMQ.close();
   closeMongo();
   service.close();
+  queue.closeWorker();
   process.exit(0);
 }
