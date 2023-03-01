@@ -68,5 +68,6 @@ function closeApp() {
   closeMongo();
   service.close();
   projectSync.closeWorker();
+  useScheduler().stop();
   process.exit(0);
 }
