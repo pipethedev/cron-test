@@ -75,6 +75,7 @@ export const useRabbitMQ = async (
   message?: string
 ) => {
   try {
+    console.log("Connecting to rabbitmq");
     const connection = rabbitMQ;
     await connection.connect();
 

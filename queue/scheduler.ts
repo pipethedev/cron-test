@@ -3,10 +3,12 @@ import { useRabbitMQ } from "../config";
 import { keepInSync } from "../worker/sync";
 
 const useScheduler = () => {
-  const scheduler = cron.schedule("*/30 * * * *", () => keepInSync());
-  cron.schedule("*/2 * * * *", () => useRabbitMQ("main", "consume"));
+  const syncScheduler = cron.schedule("*/30 * * * *", () => keepInSync());
+  const rabbitMqScheduler = cron.schedule("*/2 * * * *", () =>
+    useRabbitMQ("main", "consume")
+  );
 
-  return scheduler;
+  return [syncScheduler, rabbitMqScheduler];
 };
 
 export default useScheduler;
