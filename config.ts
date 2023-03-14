@@ -69,14 +69,15 @@ export const proxy = {
   },
 };
 
+const connection = rabbitMQ;
+const connect = connection.connect();
 export const useRabbitMQ = async (
   name: string,
   type: "send" | "consume",
   message?: string
 ) => {
   try {
-    const connection = rabbitMQ;
-    await connection.connect();
+    await connect;
 
     if (type === "send" && message) {
       await connection.sendMessage(name, message);
