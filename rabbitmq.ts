@@ -1,4 +1,6 @@
 import amqp, { Connection, Channel } from "amqplib";
+import dotenv from "dotenv";
+dotenv.config();
 
 export class RabbitMQ {
   private connection!: Connection;
