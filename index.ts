@@ -12,7 +12,7 @@ connectToMongo(process.env.MONGODB_URI || "");
 
 const service = restana({});
 const redisClient = container.resolve(delay(() => RedisClient));
-const [syncScheduler, rabbitMqScheduler] = useScheduler();
+const [syncScheduler] = useScheduler();
 
 proxy.changeDefault();
 proxy.register(
@@ -69,6 +69,5 @@ function closeApp() {
   service.close();
   projectSync.closeWorker();
   syncScheduler.stop();
-  rabbitMqScheduler.stop();
   process.exit(0);
 }
