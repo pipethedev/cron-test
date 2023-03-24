@@ -40,130 +40,130 @@ const keepInSyncWorker = async (job: Job) => {
       log,
       id: _id,
     });
-    if (shouldStart) {
-      let done = false,
-        failed = false;
+    if (!shouldStart) return;
 
-      console.log(`Redeploying ${name}...`);
-      const deployLog = `${dir}/deploy.log`;
-      const startTime = new Date().toISOString();
+    let done = false,
+      failed = false;
 
-      const fileDir = rootDir ? path.join(dir, rootDir) : dir;
-      const start = spawn(
-        "nohup",
-        [
-          "brimble",
-          "dev",
-          `${fileDir}`,
-          `${port ? `"-p ${port}"` : ""}`,
-          "-so",
-          buildCommand ? "--build-command" : "",
-          buildCommand ? `"${buildCommand}"` : "",
-          outputDirectory ? "--output-directory" : "",
-          outputDirectory ? `"${outputDirectory}"` : "",
-          ">>",
+    console.log(`Redeploying ${name}...`);
+    const deployLog = `${dir}/deploy.log`;
+    const startTime = new Date().toISOString();
+
+    const fileDir = rootDir ? path.join(dir, rootDir) : dir;
+    const start = spawn(
+      "nohup",
+      [
+        "brimble",
+        "dev",
+        `${fileDir}`,
+        `${port ? `"-p ${port}"` : ""}`,
+        "-so",
+        buildCommand ? "--build-command" : "",
+        buildCommand ? `"${buildCommand}"` : "",
+        outputDirectory ? "--output-directory" : "",
+        outputDirectory ? `"${outputDirectory}"` : "",
+        ">>",
+        deployLog,
+        "2>&1",
+        "&",
+      ],
+      { shell: true }
+    );
+
+    start.stderr.on("data", (data) => {
+      const message = data.toString();
+      fs.createWriteStream(deployLog, message);
+    });
+
+    start.on("close", (code) => {
+      if (code !== 0) {
+        fs.createWriteStream(
           deployLog,
-          "2>&1",
-          "&",
-        ],
-        { shell: true }
-      );
-
-      start.stderr.on("data", (data) => {
-        const message = data.toString();
-        fs.createWriteStream(deployLog, message);
-      });
-
-      start.on("close", (code) => {
-        if (code !== 0) {
-          fs.createWriteStream(
-            deployLog,
-            `child process exited with code ${code as any}`
-          );
-        }
-      });
-
-      const watcher = spawn("tail", ["-f", deployLog]);
-      watcher.stdout.on("data", async (data: any) => {
-        const buff = data.toString();
-        const messages = buff.split("\n");
-
-        await Promise.all(
-          messages?.map(async (message: string) => {
-            message = message.trim().toLowerCase();
-            if (message.includes("failed")) {
-              const status = PROJECT_STATUS.FAILED;
-              await Project.findByIdAndUpdate(_id, { status });
-              log &&
-                (await Log.findByIdAndUpdate(log._id, {
-                  status,
-                  startTime,
-                  endTime: new Date().toISOString(),
-                }));
-
-              failed = true;
-            }
-          })
+          `child process exited with code ${code as any}`
         );
+      }
+    });
 
-        const pid = buff.match(/PID: \d+/g);
-        const url = buff.match(/http:\/\/[a-zA-Z0-9-.]+:[0-9]+/g);
-        if (url && pid) {
-          let urlString = url[0];
-          const port = urlString.match(/:[0-9]+/g);
+    const watcher = spawn("tail", ["-f", deployLog]);
+    watcher.stdout.on("data", async (data: any) => {
+      const buff = data.toString();
+      const messages = buff.split("\n");
 
-          urlString = urlString.replace("localhost", "127.0.0.1");
+      await Promise.all(
+        messages?.map(async (message: string) => {
+          message = message.trim().toLowerCase();
+          if (message.includes("failed")) {
+            const status = PROJECT_STATUS.FAILED;
+            await Project.findByIdAndUpdate(_id, { status });
+            log &&
+              (await Log.findByIdAndUpdate(log._id, {
+                status,
+                startTime,
+                endTime: new Date().toISOString(),
+              }));
 
-          await Project.findByIdAndUpdate(project?._id, {
-            pid: pid?.[0].split(":")[1].trim(),
-            port: port?.[0].split(":")[1].trim(),
-            status: PROJECT_STATUS.ACTIVE,
-          });
-          log &&
-            (await Log.findByIdAndUpdate(log._id, {
-              status: PROJECT_STATUS.ACTIVE,
-              startTime,
-              endTime: new Date().toISOString(),
-            }));
-
-          domains.forEach((domain: IDomain) => {
-            proxy.register(domain.name, urlString, {
-              isWatchMode: true,
-            });
-            socket.emit("domain:clear_cache", {
-              domain: domain.name,
-            });
-          });
-          done = true;
-        }
-      });
-
-      while (!done && !failed)
-        await new Promise((resolve) => setTimeout(resolve, 1000));
-
-      await new Promise((resolve) =>
-        setTimeout(() => {
-          exec(`kill -9 ${watcher.pid}`);
-          exec(`kill -9 ${start.pid}`);
-          if (done) {
-            console.log(`${name} redeployed 🚀`);
-            exec(`kill -9 ${oldPid}`);
-            exec(`pkill -f jest-worker/processChild.js`);
+            failed = true;
           }
-          resolve(true);
-        }, 10000)
+        })
       );
 
-      if (done) {
-        console.log(`Project ${project.name} deployed successfully`);
-        return true;
-      } else if (failed) {
-        console.log(`${project.name} deploy failed`);
-        throw new UnrecoverableError("Deploy failed");
-      } else {
-        console.log(`${project.name} deploy timed out`);
-        throw new UnrecoverableError("Deploy timed out");
+      const pid = buff.match(/PID: \d+/g);
+      const url = buff.match(/http:\/\/[a-zA-Z0-9-.]+:[0-9]+/g);
+      if (url && pid) {
+        let urlString = url[0];
+        const port = urlString.match(/:[0-9]+/g);
+
+        urlString = urlString.replace("localhost", "127.0.0.1");
+
+        await Project.findByIdAndUpdate(project?._id, {
+          pid: pid?.[0].split(":")[1].trim(),
+          port: port?.[0].split(":")[1].trim(),
+          status: PROJECT_STATUS.ACTIVE,
+        });
+        log &&
+          (await Log.findByIdAndUpdate(log._id, {
+            status: PROJECT_STATUS.ACTIVE,
+            startTime,
+            endTime: new Date().toISOString(),
+          }));
+
+        domains.forEach((domain: IDomain) => {
+          proxy.register(domain.name, urlString, {
+            isWatchMode: true,
+          });
+          socket.emit("domain:clear_cache", {
+            domain: domain.name,
+          });
+        });
+        done = true;
       }
+    });
+
+    while (!done && !failed)
+      await new Promise((resolve) => setTimeout(resolve, 1000));
+
+    await new Promise((resolve) =>
+      setTimeout(() => {
+        exec(`kill -9 ${watcher.pid}`);
+        exec(`kill -9 ${start.pid}`);
+        if (done) {
+          console.log(`${name} redeployed 🚀`);
+          exec(`kill -9 ${oldPid}`);
+          exec(`pkill -f jest-worker/processChild.js`);
+        }
+        resolve(true);
+      }, 10000)
+    );
+
+    if (done) {
+      console.log(`Project ${project.name} deployed successfully`);
+      return true;
+    } else if (failed) {
+      console.log(`${project.name} deploy failed`);
+      throw new UnrecoverableError("Deploy failed");
+    } else {
+      console.log(`${project.name} deploy timed out`);
+      throw new UnrecoverableError("Deploy timed out");
     }
   } catch (error: any) {
     console.error(`Couldn't start | ${error.message}`);
@@ -174,9 +174,8 @@ const keepInSyncWorker = async (job: Job) => {
 export const projectSync = new QueueClass("project-sync", keepInSyncWorker);
 
 export const keepInSync = async () => {
-  const projects = await Project.find().lean().exec();
+  const projects = await Project.find().sort({ createdAt: -1 });
   const data = projects.map((project: LeanDocument<IProject>) => ({
-    name: "project-sync",
     data: { id: project._id },
   }));
 

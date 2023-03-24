@@ -13,7 +13,7 @@ const redbird = require("redbird")({
 
 dotenv.config();
 
-export const redis = container.resolve(delay(() => RedisClient));
+export const redis = container.resolve(delay(() => RedisClient)).get();
 const API_URL =
   process.env.DOMAIN || `http://127.0.0.1:${process.env.API_PORT || 5000}`;
 export const socket = io(API_URL, { transports: ["websocket"] });
@@ -23,7 +23,7 @@ socket.on("connect", () => {
 
 export const queue = (name: string) =>
   new Queue(name, {
-    connection: redis.get().duplicate(),
+    connection: redis.duplicate(),
     defaultJobOptions: {
       removeOnComplete: true,
       removeOnFail: true,
