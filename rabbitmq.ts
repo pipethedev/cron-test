@@ -6,13 +6,18 @@ export class RabbitMQ {
   private connection!: Connection;
   private channel!: Channel;
 
-  constructor(private uri: string) {}
-
   async connect() {
-    this.connection = await amqp.connect(this.uri, {
-      reconnect: true,
-      heartbeat: 60,
-    });
+    this.connection = await amqp.connect(
+      {
+        protocol: process.env.RABBITMQ_PROTOCOL || "amqp",
+        hostname: process.env.RABBITMQ_HOST || "localhost",
+        port: Number(process.env.RABBITMQ_PORT) || 5672,
+        username: process.env.RABBITMQ_USER || "guest",
+        password: process.env.RABBITMQ_PASS || "guest",
+        vhost: process.env.RABBITMQ_VHOST || "/",
+      },
+      { reconnect: true, heartbeat: 60 }
+    );
     this.channel = await this.connection.createChannel();
 
     this.connection.on("error", (error) => {
@@ -41,6 +46,4 @@ export class RabbitMQ {
   }
 }
 
-export const rabbitMQ = new RabbitMQ(
-  process.env.RABBITMQ_URI || "amqp://localhost"
-);
+export const rabbitMQ = new RabbitMQ();
