@@ -57,7 +57,6 @@ const keepInSyncWorker = async (job: Job) => {
         "dev",
         `${fileDir}`,
         `${port ? `"-p ${port}"` : ""}`,
-        "-so",
         buildCommand ? "--build-command" : "",
         buildCommand ? `"${buildCommand}"` : "",
         outputDirectory ? "--output-directory" : "",
@@ -206,7 +205,7 @@ const starter = async (data: any) => {
       domains.forEach((domain: IDomain) => {
         proxy.register(domain.name, urlString, { isWatchMode: true });
         useRabbitMQ(
-          "proxy",
+          "main",
           "send",
           JSON.stringify({
             event: "domain:clear_cache",
