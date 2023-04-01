@@ -33,7 +33,7 @@ const keepInSyncWorker = async (job: Job) => {
       "send",
       JSON.stringify({
         event: "redeploy",
-        data: { projectId: id, startOnly: true },
+        data: { projectId: id, upKeep: true },
       })
     );
   } catch (error: any) {
