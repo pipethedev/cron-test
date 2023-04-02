@@ -17,7 +17,7 @@ const keepInSyncWorker = async (job: Job) => {
 
     if (!project) return;
 
-    const { domains, port, dir, name, log } = project;
+    const { domains, port, dir, name, log, repo } = project;
 
     const shouldStart = await starter({
       domains,
@@ -26,6 +26,7 @@ const keepInSyncWorker = async (job: Job) => {
       name,
       log,
       id,
+      repo,
     });
     if (!shouldStart) return;
     return useRabbitMQ(
@@ -33,7 +34,10 @@ const keepInSyncWorker = async (job: Job) => {
       "send",
       JSON.stringify({
         event: "redeploy",
-        data: { projectId: id, upKeep: true },
+        data: {
+          projectId: id,
+          upKeep: typeof shouldStart === "object" ? false : true,
+        },
       })
     );
   } catch (error: any) {
@@ -56,7 +60,7 @@ export const keepInSync = async () => {
 };
 
 const starter = async (data: any) => {
-  const { domains, port, dir, name, log } = data;
+  const { domains, port, dir, name, log, repo } = data;
 
   if (!name) return false;
 
@@ -64,10 +68,10 @@ const starter = async (data: any) => {
 
   if (!dir) {
     console.error(`${name} is not properly configured`);
-    return false;
+    return repo ? { redeploy: true } : false;
   } else if (!fs.existsSync(dir)) {
     console.error(`${dir} does not exist -> ${name}`);
-    return false;
+    return repo ? { redeploy: true } : false;
   } else {
     try {
       await axios(urlString);
