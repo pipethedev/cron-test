@@ -17,7 +17,7 @@ const keepInSyncWorker = async (job: Job) => {
 
     if (!project) return;
 
-    const { domains, port, dir, name, log, repo } = project;
+    const { domains, port, dir, name, log, repo, user_id } = project;
 
     const shouldStart = await starter({
       domains,
@@ -67,11 +67,9 @@ const starter = async (data: any) => {
   const urlString = `http://127.0.0.1:${port}`;
 
   if (!dir) {
-    console.error(`${name} is not properly configured`);
-    return repo ? { redeploy: true } : false;
+    return repo && repo.installationId ? { redeploy: true } : false;
   } else if (!fs.existsSync(dir)) {
-    console.error(`${dir} does not exist -> ${name}`);
-    return repo ? { redeploy: true } : false;
+    return repo && repo.installationId ? { redeploy: true } : false;
   } else {
     try {
       await axios(urlString);
