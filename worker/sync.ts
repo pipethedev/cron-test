@@ -67,32 +67,29 @@ const starter = async (data: any) => {
 
   const urlString = `http://127.0.0.1:${port}`;
 
-  if (!dir) {
-    return repo && repo.installationId ? { redeploy: true } : false;
-  } else if (!fs.existsSync(dir)) {
-    return repo && repo.installationId ? { redeploy: true } : false;
-  } else {
-    try {
-      await axios(urlString);
+  try {
+    await axios(urlString);
 
-      if (log && log.status === PROJECT_STATUS.PENDING) return true;
+    if (log && log.status === PROJECT_STATUS.PENDING) return true;
 
-      domains.forEach((domain: IDomain) => {
-        proxy.register(domain.name, urlString, { isWatchMode: true });
-        useRabbitMQ(
-          "main",
-          "send",
-          JSON.stringify({
-            event: "domain:clear_cache",
-            data: { domain: domain.name },
-          })
-        );
-      });
-      return false;
-    } catch (error) {
-      const { message } = error as Error;
-      console.error(`${name} is not running reason: ${message}`);
-      return true;
+    domains.forEach((domain: IDomain) => {
+      proxy.register(domain.name, urlString, { isWatchMode: true });
+      useRabbitMQ(
+        "main",
+        "send",
+        JSON.stringify({
+          event: "domain:clear_cache",
+          data: { domain: domain.name },
+        })
+      );
+    });
+    return false;
+  } catch (error) {
+    if (!dir) {
+      return repo && repo.installationId ? { redeploy: true } : false;
+    } else if (!fs.existsSync(dir)) {
+      return repo && repo.installationId ? { redeploy: true } : false;
     }
+    return true;
   }
 };
