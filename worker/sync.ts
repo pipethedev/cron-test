@@ -17,7 +17,7 @@ const keepInSyncWorker = async (job: Job) => {
 
     if (!project) return;
 
-    const { domains, port, dir, name, log, repo, user_id } = project;
+    const { domains, port, dir, name, log, repo } = project;
 
     const shouldStart = await starter({
       domains,
@@ -36,7 +36,8 @@ const keepInSyncWorker = async (job: Job) => {
         event: "redeploy",
         data: {
           projectId: id,
-          upKeep: typeof shouldStart === "object" ? false : true,
+          upKeep: true,
+          redeploy: typeof shouldStart === "object" ? true : false,
         },
       })
     );
