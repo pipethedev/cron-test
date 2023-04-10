@@ -100,4 +100,4 @@ export const useRabbitMQ = async (
   }
 };
 
-export const prioritize = ["brimble-client", "brimble-dashboard"];
+export const prioritize = ["brimble-client", "brimble-dashboard", "webshots"];
