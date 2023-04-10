@@ -2,7 +2,7 @@ import { IDomain, IProject, PROJECT_STATUS } from "@brimble/models";
 import axios from "axios";
 import fs from "fs";
 import { Project } from "@brimble/models";
-import { proxy, useRabbitMQ } from "../config";
+import { prioritize, proxy, useRabbitMQ } from "../config";
 import { QueueClass } from "../queue";
 import { Job, UnrecoverableError } from "bullmq";
 import { LeanDocument } from "mongoose";
@@ -50,10 +50,25 @@ const keepInSyncWorker = async (job: Job) => {
 export const projectSync = new QueueClass("project-sync", keepInSyncWorker);
 
 export const keepInSync = async () => {
-  const projects = await Project.find().sort({ createdAt: -1 });
-  const data = projects.map((project: LeanDocument<IProject>) => ({
-    data: { id: project._id },
-  }));
+  const projects = await Project.find();
+  const data = projects
+    .sort((a, b) => {
+      const aIndex = prioritize.indexOf(a.name);
+      const bIndex = prioritize.indexOf(b.name);
+      if (aIndex !== -1 && bIndex !== -1) {
+        return aIndex - bIndex;
+      }
+      if (aIndex !== -1) {
+        return -1;
+      }
+      if (bIndex !== -1) {
+        return 1;
+      }
+      return Number(b.createdAt) - Number(a.createdAt);
+    })
+    .map((project: LeanDocument<IProject>) => ({
+      data: { id: project._id },
+    }));
 
   console.log("Syncing Project...");
 

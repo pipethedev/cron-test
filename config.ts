@@ -99,3 +99,5 @@ export const useRabbitMQ = async (
     console.error(err);
   }
 };
+
+export const prioritize = ["brimble-client", "brimble-dashboard"];
