@@ -70,8 +70,6 @@ const starter = async (data: any) => {
   try {
     await axios(urlString);
 
-    if (log && log.status === PROJECT_STATUS.PENDING) return true;
-
     domains.forEach((domain: IDomain) => {
       proxy.register(domain.name, urlString, { isWatchMode: true });
       useRabbitMQ(

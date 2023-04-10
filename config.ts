@@ -4,14 +4,12 @@ import { Queue } from "bullmq";
 import { RedisClient } from "./redis/redis-client";
 import { container, delay } from "tsyringe";
 import { rabbitMQ } from "./rabbitmq";
-require("dotenv").config();
+dotenv.config();
 
 const redbird = require("redbird")({
   port: process.env.PROXY_PORT || 9999,
   bunyan: false,
 });
-
-dotenv.config();
 
 export const redis = container.resolve(delay(() => RedisClient)).get();
 const API_URL =
