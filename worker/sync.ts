@@ -38,6 +38,7 @@ const keepInSyncWorker = async (job: Job) => {
           projectId: id,
           upKeep: true,
           redeploy: typeof shouldStart === "object" ? true : false,
+          priority: prioritize.indexOf(name) + 1,
         },
       })
     );
@@ -66,17 +67,13 @@ export const keepInSync = async () => {
       }
       return Number(b.createdAt) - Number(a.createdAt);
     })
-    .map((project: LeanDocument<IProject>) => ({
-      data: { id: project._id },
-    }));
-
-  console.log("Syncing Project...");
+    .map((project: LeanDocument<IProject>) => ({ data: { id: project._id } }));
 
   await projectSync.executeBulk(data);
 };
 
 const starter = async (data: any) => {
-  const { domains, port, dir, name, log, repo } = data;
+  const { domains, port, dir, name, repo } = data;
 
   if (!name) return false;
 
