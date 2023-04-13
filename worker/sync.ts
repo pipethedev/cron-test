@@ -33,7 +33,11 @@ const keepInSyncWorker = async (job: Job) => {
     if (!shouldStart) return;
     if (timeElapsed < 1000 * 60 * 30) return;
 
-    await Project.updateOne({ _id: id }, { lastProcessed: now });
+    await Project.updateOne(
+      { _id: id },
+      { lastProcessed: now },
+      { timestamps: false }
+    );
 
     return useRabbitMQ(
       "main",
