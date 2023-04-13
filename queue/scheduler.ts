@@ -3,7 +3,7 @@ import { keepInSync } from "../worker/sync";
 
 const useScheduler = () => {
   const syncScheduler = cron.schedule(process.env.CRON || "*/5 * * * *", () =>
-    keepInSync({ all: false })
+    keepInSync({ checkLast: true })
   );
 
   return [syncScheduler];

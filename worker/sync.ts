@@ -8,7 +8,7 @@ import { Job, UnrecoverableError } from "bullmq";
 import { LeanDocument } from "mongoose";
 
 const keepInSyncWorker = async (job: Job) => {
-  const { id, all } = job.data;
+  const { id, checkLast } = job.data;
 
   try {
     if (!id || id === "undefined") return;
@@ -29,7 +29,7 @@ const keepInSyncWorker = async (job: Job) => {
       repo,
     });
     if (!shouldStart) return;
-    if (all) {
+    if (checkLast) {
       const now = Date.now();
       const timeElapsed = now - (lastProcessed || 0);
       if (timeElapsed < 1000 * 60 * 30) return;
@@ -62,7 +62,7 @@ const keepInSyncWorker = async (job: Job) => {
 
 export const projectSync = new QueueClass("project-sync", keepInSyncWorker);
 
-export const keepInSync = async ({ all }: { all: boolean }) => {
+export const keepInSync = async (opt?: { checkLast?: boolean }) => {
   const projects = await Project.find();
   const data = projects
     .sort((a, b) => {
@@ -80,7 +80,7 @@ export const keepInSync = async ({ all }: { all: boolean }) => {
       return Number(b.createdAt) - Number(a.createdAt);
     })
     .map((project: LeanDocument<IProject>) => ({
-      data: { id: project._id, all },
+      data: { id: project._id, checkLast: opt?.checkLast },
     }));
 
   await projectSync.executeBulk(data);
@@ -110,9 +110,9 @@ const starter = async (data: any) => {
     return false;
   } catch (error) {
     if (!dir) {
-      return repo && repo.installationId ? { redeploy: true } : false;
+      return repo && repo.instcheckLastationId ? { redeploy: true } : false;
     } else if (!fs.existsSync(dir)) {
-      return repo && repo.installationId ? { redeploy: true } : false;
+      return repo && repo.instcheckLastationId ? { redeploy: true } : false;
     }
     return true;
   }

@@ -26,7 +26,7 @@ proxy.register(
   {}
 );
 
-keepInSync({ all: true });
+keepInSync();
 useRabbitMQ("proxy", "consume");
 useRabbitMQ("main", "send", JSON.stringify({ event: "Test", data: "Working" }));
 
