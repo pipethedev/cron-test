@@ -8,7 +8,7 @@ import { Job, UnrecoverableError } from "bullmq";
 import { LeanDocument } from "mongoose";
 
 const keepInSyncWorker = async (job: Job) => {
-  const { id } = job.data;
+  const { id, all } = job.data;
 
   try {
     if (!id || id === "undefined") return;
@@ -18,8 +18,6 @@ const keepInSyncWorker = async (job: Job) => {
     if (!project) return;
 
     const { domains, port, dir, name, log, repo, lastProcessed } = project;
-    const now = Date.now();
-    const timeElapsed = now - (lastProcessed || 0);
 
     const shouldStart = await starter({
       domains,
@@ -31,13 +29,17 @@ const keepInSyncWorker = async (job: Job) => {
       repo,
     });
     if (!shouldStart) return;
-    if (timeElapsed < 1000 * 60 * 30) return;
+    if (all) {
+      const now = Date.now();
+      const timeElapsed = now - (lastProcessed || 0);
+      if (timeElapsed < 1000 * 60 * 30) return;
 
-    await Project.updateOne(
-      { _id: id },
-      { lastProcessed: now },
-      { timestamps: false }
-    );
+      await Project.updateOne(
+        { _id: id },
+        { lastProcessed: now },
+        { timestamps: false }
+      );
+    }
 
     return useRabbitMQ(
       "main",
@@ -60,7 +62,7 @@ const keepInSyncWorker = async (job: Job) => {
 
 export const projectSync = new QueueClass("project-sync", keepInSyncWorker);
 
-export const keepInSync = async () => {
+export const keepInSync = async ({ all }: { all: boolean }) => {
   const projects = await Project.find();
   const data = projects
     .sort((a, b) => {
@@ -77,7 +79,9 @@ export const keepInSync = async () => {
       }
       return Number(b.createdAt) - Number(a.createdAt);
     })
-    .map((project: LeanDocument<IProject>) => ({ data: { id: project._id } }));
+    .map((project: LeanDocument<IProject>) => ({
+      data: { id: project._id, all },
+    }));
 
   await projectSync.executeBulk(data);
 };
