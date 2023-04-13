@@ -17,7 +17,9 @@ const keepInSyncWorker = async (job: Job) => {
 
     if (!project) return;
 
-    const { domains, port, dir, name, log, repo } = project;
+    const { domains, port, dir, name, log, repo, lastProcessed } = project;
+    const now = Date.now();
+    const timeElapsed = now - (lastProcessed || 0);
 
     const shouldStart = await starter({
       domains,
@@ -29,6 +31,10 @@ const keepInSyncWorker = async (job: Job) => {
       repo,
     });
     if (!shouldStart) return;
+    if (timeElapsed < 1000 * 60 * 30) return;
+
+    await Project.updateOne({ _id: id }, { lastProcessed: now });
+
     return useRabbitMQ(
       "main",
       "send",
@@ -52,12 +58,7 @@ export const projectSync = new QueueClass("project-sync", keepInSyncWorker);
 
 export const keepInSync = async () => {
   const projects = await Project.find();
-  const now = Date.now();
   const data = projects
-    .filter((project: LeanDocument<IProject>) => {
-      const timeElapsed = now - (project.lastProcessed || 0);
-      return timeElapsed > 30 * 60 * 1000; // only retry projects processed more than 30 minutes ago
-    })
     .sort((a, b) => {
       const aIndex = prioritize.indexOf(a.name);
       const bIndex = prioritize.indexOf(b.name);
@@ -73,8 +74,6 @@ export const keepInSync = async () => {
       return Number(b.createdAt) - Number(a.createdAt);
     })
     .map((project: LeanDocument<IProject>) => ({ data: { id: project._id } }));
-
-  await Promise.all(data.map(({ data: { id } }) => Project.updateOne({ _id: id }, { lastProcessed: now })));
 
   await projectSync.executeBulk(data);
 };
