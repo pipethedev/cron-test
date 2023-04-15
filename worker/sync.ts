@@ -110,9 +110,9 @@ const starter = async (data: any) => {
     return false;
   } catch (error) {
     if (!dir) {
-      return repo && repo.instcheckLastationId ? { redeploy: true } : false;
+      return repo && repo.installationId ? { redeploy: true } : false;
     } else if (!fs.existsSync(dir)) {
-      return repo && repo.instcheckLastationId ? { redeploy: true } : false;
+      return repo && repo.installationId ? { redeploy: true } : false;
     }
     return true;
   }
