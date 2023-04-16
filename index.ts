@@ -27,7 +27,7 @@ proxy.register(
 );
 proxy.register(
   `${process.env.DOMAIN}/auth` || "brimble.test/auth",
-  `http://127.0.0.1:${process.env.AUTH_PORT || 8000}}`,
+  `http://127.0.0.1:${process.env.AUTH_PORT || 8000}`,
   {}
 );
 
