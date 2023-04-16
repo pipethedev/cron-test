@@ -25,6 +25,11 @@ proxy.register(
   `http://127.0.0.1:${process.env.PORT || 3000}`,
   {}
 );
+proxy.register(
+  `${process.env.DOMAIN}/auth` || "brimble.test/auth",
+  `http://127.0.0.1:${process.env.AUTH_PORT || 8000}}`,
+  {}
+);
 
 keepInSync();
 useRabbitMQ("proxy", "consume");
