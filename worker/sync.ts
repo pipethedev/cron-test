@@ -32,7 +32,7 @@ const keepInSyncWorker = async (job: Job) => {
     if (checkLast) {
       const now = Date.now();
       const timeElapsed = now - (lastProcessed || 0);
-      if (timeElapsed < 1000 * 60 * 30) return;
+      if (timeElapsed < 1000 * 60 * 10) return;
 
       await Project.updateOne(
         { _id: id },
