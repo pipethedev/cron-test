@@ -4,11 +4,19 @@ import { Queue } from "bullmq";
 import { RedisClient } from "./redis/redis-client";
 import { container, delay } from "tsyringe";
 import { rabbitMQ } from "./rabbitmq";
+import { createLogger } from "@brimble/utils";
 dotenv.config();
 
 const redbird = require("redbird")({
   port: process.env.PROXY_PORT || 9999,
   bunyan: false,
+});
+
+export const log = createLogger({
+  defaultMeta: {
+    service: "proxy",
+    timestamp: new Date().toISOString(),
+  },
 });
 
 export const redis = container.resolve(delay(() => RedisClient)).get();
@@ -47,7 +55,7 @@ export const proxy = {
         }
       }
     } catch (err) {
-      console.error(err);
+      log.error(err);
     }
   },
 
@@ -81,10 +89,10 @@ export const useRabbitMQ = async (
       await connection.sendMessage(name, message);
     } else if (type === "consume") {
       await connection.consume(name, (msg) => {
-        console.log(`Received message from ${name} queue: ${msg}`);
+        log.info(`Received message from ${name} queue: ${msg}`);
         if (msg) {
           const { event, data } = JSON.parse(msg.toString());
-          console.log({ event, data });
+          log.info({ event, data });
           if (event === "domain-register") {
             proxy.unregister(data.domain);
             proxy.register(data.domain, data.ip, { id: data.id });
@@ -96,7 +104,7 @@ export const useRabbitMQ = async (
       throw new Error("Invalid type");
     }
   } catch (err) {
-    console.error(err);
+    log.error(err);
   }
 };
 

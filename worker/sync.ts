@@ -1,8 +1,8 @@
-import { IDomain, IProject, PROJECT_STATUS } from "@brimble/models";
+import { IDomain, IProject } from "@brimble/models";
 import axios from "axios";
 import fs from "fs";
 import { Project } from "@brimble/models";
-import { prioritize, proxy, useRabbitMQ } from "../config";
+import { prioritize, proxy, useRabbitMQ, log } from "../config";
 import { QueueClass } from "../queue";
 import { Job, UnrecoverableError } from "bullmq";
 import { LeanDocument } from "mongoose";
@@ -55,7 +55,7 @@ const keepInSyncWorker = async (job: Job) => {
       })
     );
   } catch (error: any) {
-    console.error(error.message);
+    log.error(error.message);
     throw new UnrecoverableError(error.message);
   }
 };
@@ -64,7 +64,7 @@ export const projectSync = new QueueClass("project-sync", keepInSyncWorker);
 
 export const keepInSync = async (opt?: { checkLast?: boolean }) => {
   if (opt?.checkLast)
-    console.log(`Running keepInSync with checkLast: ${opt?.checkLast}`);
+    log.info(`Running keepInSync with checkLast: ${opt?.checkLast}`);
   const projects = await Project.find();
   const data = projects
     .sort((a, b) => {
