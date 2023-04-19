@@ -4,19 +4,12 @@ import { Queue } from "bullmq";
 import { RedisClient } from "./redis/redis-client";
 import { container, delay } from "tsyringe";
 import { rabbitMQ } from "./rabbitmq";
-import { createLogger } from "@brimble/utils";
+import { log } from "@brimble/utils";
 dotenv.config();
 
 const redbird = require("redbird")({
   port: process.env.PROXY_PORT || 9999,
   bunyan: false,
-});
-
-export const log = createLogger({
-  defaultMeta: {
-    service: "proxy",
-    timestamp: new Date().toISOString(),
-  },
 });
 
 export const redis = container.resolve(delay(() => RedisClient)).get();

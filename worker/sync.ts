@@ -2,10 +2,11 @@ import { IDomain, IProject } from "@brimble/models";
 import axios from "axios";
 import fs from "fs";
 import { Project } from "@brimble/models";
-import { prioritize, proxy, useRabbitMQ, log } from "../config";
+import { prioritize, proxy, useRabbitMQ } from "../config";
 import { QueueClass } from "../queue";
 import { Job, UnrecoverableError } from "bullmq";
 import { LeanDocument } from "mongoose";
+import { log } from "@brimble/utils";
 
 const keepInSyncWorker = async (job: Job) => {
   const { id, checkLast } = job.data;
@@ -118,9 +119,7 @@ const starter = async (data: any) => {
     });
     return false;
   } catch (error) {
-    if (!dir) {
-      return repo && repo.installationId ? { redeploy: true } : false;
-    } else if (!fs.existsSync(dir)) {
+    if (!dir || !fs.existsSync(dir)) {
       return repo && repo.installationId ? { redeploy: true } : false;
     }
     return true;
