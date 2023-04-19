@@ -49,6 +49,9 @@ const keepInSyncWorker = async (job: Job) => {
       );
     }
 
+    const filterPriority = prioritize.filter((p) => p === name);
+    const priority = filterPriority ? filterPriority.indexOf(name) + 1 : 0;
+
     return useRabbitMQ(
       "main",
       "send",
@@ -58,7 +61,7 @@ const keepInSyncWorker = async (job: Job) => {
           projectId: id,
           upKeep: true,
           redeploy: typeof shouldStart === "object" ? true : false,
-          priority: prioritize.indexOf(name) + 1,
+          priority,
         },
       })
     );
