@@ -30,7 +30,7 @@ const keepInSyncWorker = async (job: Job) => {
       repo,
     });
     if (!shouldStart) return;
-    if (checkLast) {
+    if (checkLast && !prioritize.includes(name)) {
       const now = Date.now();
       const timeElapsed = now - (lastProcessed || 0);
       if (
