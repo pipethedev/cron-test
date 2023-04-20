@@ -42,8 +42,11 @@ service.get("/", (_, res) => {
   });
 });
 
-service.post("/proxy", (_, res) => {
-  keepInSync();
+service.post("/proxy", (req, res) => {
+  const apiKey = req.headers['brimble-proxy-key'];
+  if (apiKey === process.env.BRIMBLE_KEY) {
+    keepInSync();
+  }
 });
 
 service.post("/stop", (_, res) => {
