@@ -13,6 +13,16 @@ jobs:
     name: Deploy to Server
     runs-on: ubuntu-latest
     steps:
+      - name: Create environment file
+        run: |
+          echo "PORT=${{ secrets.PORT }}"
+          echo "PROXY_AUTH_KEY=${{ secrets.PROXY_AUTH_KEY }}" > .env
+          echo "REDIS_CONNECTION=${{ secrets.REDIS_CONNECTION }}" >> .env
+          echo "REDIS_HOST=${{ secrets.REDIS_HOST }}" >> .env
+          echo "REDIS_PORT=${{ secrets.REDIS_PORT }}" >> .env
+          echo "REDIS_PASSWORD=${{ secrets.REDIS_PASSWORD }}" >> .env
+          echo "REDIS_USERNAME=${{ secrets.REDIS_USERNAME }}" >> .env
+          echo "MONGODB_URI=${{ secrets.MONGODB_URI }}" >> .env
       - name: Git Pull on Server
         uses: appleboy/ssh-action@master
         with:
