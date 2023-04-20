@@ -40,6 +40,16 @@
     pino-pretty "^9.1.0"
     winston "^3.8.2"
 
+"@brimble/utils@^1.5.1":
+  version "1.5.1"
+  resolved "https://registry.yarnpkg.com/@brimble/utils/-/utils-1.5.1.tgz#a76a005509b419e3d7171ec1dfc121eee4c41c20"
+  integrity sha512-IGdu0kQPwEVmfNZ0k/sEkfbHW19e4K+KPgds2ClEzyMff7e6wZhBI6dtz0+h8FiWrIZuYu5YvVSniWHHTOTXsA==
+  dependencies:
+    crypto-js "^4.1.1"
+    pino "^8.6.0"
+    pino-pretty "^9.1.0"
+    winston "^3.8.2"
+
 "@colors/colors@1.5.0":
   version "1.5.0"
   resolved "https://registry.yarnpkg.com/@colors/colors/-/colors-1.5.0.tgz#bb504579c1cae923e6576a4f5da43d25f97bdbd9"

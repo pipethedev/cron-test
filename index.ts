@@ -42,6 +42,10 @@ service.get("/", (_, res) => {
   });
 });
 
+service.post("/proxy", (_, res) => {
+  keepInSync();
+});
+
 service.post("/stop", (_, res) => {
   syncScheduler.stop();
   return res.send({
