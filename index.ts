@@ -43,11 +43,14 @@ service.get("/", (_, res) => {
 });
 
 service.post("/", (req, res) => {
-  console.log(req.headers);
   const apiKey = req.headers['brimble-proxy-key'];
   if (apiKey === process.env.PROXY_AUTH_KEY) {
     console.log("Running proxy triggered by AWS");
     keepInSync({ checkLast: true });
+    return res.send({
+      status: 200,
+      message: "Proxy triggered",
+    });
   }
 });
 
