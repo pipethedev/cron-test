@@ -8,6 +8,7 @@ import { Job, UnrecoverableError } from "bullmq";
 import { LeanDocument } from "mongoose";
 import { log } from "@brimble/utils";
 
+const projs: string[] = [];
 const keepInSyncWorker = async (job: Job) => {
   const { id, checkLast } = job.data;
 
@@ -49,7 +50,7 @@ const keepInSyncWorker = async (job: Job) => {
       );
     }
 
-    const filterPriority = prioritize.filter((p) => p === name);
+    const filterPriority = prioritize.filter((p) => projs.includes(p));
     const priority = filterPriority ? filterPriority.indexOf(name) + 1 : 0;
 
     return useRabbitMQ(
@@ -76,7 +77,8 @@ export const projectSync = new QueueClass("project-sync", keepInSyncWorker);
 export const keepInSync = async (opt?: { checkLast?: boolean }) => {
   if (opt?.checkLast)
     log.info(`Running keepInSync with checkLast: ${opt?.checkLast}`);
-  const projects = await Project.find();
+  const projects = await Project.find({ name: "brimble-dashboard" });
+  projs.length = 0;
   const data = projects
     .sort((a, b) => {
       const aIndex = prioritize.indexOf(a.name);
@@ -92,9 +94,21 @@ export const keepInSync = async (opt?: { checkLast?: boolean }) => {
       }
       return Number(b.createdAt) - Number(a.createdAt);
     })
-    .map((project: LeanDocument<IProject>) => ({
-      data: { id: project._id, checkLast: opt?.checkLast },
-    }));
+    .map(
+      async ({
+        name,
+        dir,
+        _id,
+        domains,
+        port,
+        repo,
+      }: LeanDocument<IProject>) => {
+        if (await starter({ dir, name, domains, port, repo })) {
+          projs.push(name);
+        }
+        return { data: { id: _id, checkLast: opt?.checkLast } };
+      }
+    );
 
   await projectSync.executeBulk(data);
 };
