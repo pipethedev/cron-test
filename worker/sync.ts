@@ -77,7 +77,7 @@ export const projectSync = new QueueClass("project-sync", keepInSyncWorker);
 export const keepInSync = async (opt?: { checkLast?: boolean }) => {
   if (opt?.checkLast)
     log.info(`Running keepInSync with checkLast: ${opt?.checkLast}`);
-  const projects = await Project.find({ name: "brimble-dashboard" });
+  const projects = await Project.find();
   projs.length = 0;
   const data = projects
     .sort((a, b) => {
@@ -94,23 +94,18 @@ export const keepInSync = async (opt?: { checkLast?: boolean }) => {
       }
       return Number(b.createdAt) - Number(a.createdAt);
     })
-    .map(
-      async ({
-        name,
-        dir,
-        _id,
-        domains,
-        port,
-        repo,
-      }: LeanDocument<IProject>) => {
-        if (await starter({ dir, name, domains, port, repo })) {
-          projs.push(name);
-        }
-        return { data: { id: _id, checkLast: opt?.checkLast } };
+    .map(async (project: IProject) => {
+      await project.populate("domains").execPopulate();
+      const shouldStart = await starter(project);
+      if (shouldStart) {
+        projs.push(project.name);
       }
-    );
+      return { data: { id: project._id, checkLast: opt?.checkLast } };
+    });
 
-  await projectSync.executeBulk(data);
+  await Promise.all(data).then(async (d) => {
+    await projectSync.executeBulk(d.map((d) => ({ data: d.data })));
+  });
 };
 
 const starter = async (data: any) => {
