@@ -8,14 +8,7 @@ export class RabbitMQ {
 
   async connect() {
     this.connection = await amqp.connect(
-      {
-        protocol: process.env.RABBITMQ_PROTOCOL || "amqp",
-        hostname: process.env.RABBITMQ_HOST || "localhost",
-        port: Number(process.env.RABBITMQ_PORT) || 5672,
-        username: process.env.RABBITMQ_USER || "guest",
-        password: process.env.RABBITMQ_PASS || "guest",
-        vhost: process.env.RABBITMQ_VHOST || "/",
-      },
+      `${process.env.RABBITMQ_URL || "amqp://localhost:5672"}`,
       { reconnect: true, heartbeat: 60 }
     );
     this.channel = await this.connection.createChannel();
