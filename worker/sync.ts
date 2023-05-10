@@ -120,14 +120,6 @@ const starter = async (data: any) => {
 
     domains.forEach((domain: IDomain) => {
       proxy.register(domain.name, urlString, { isWatchMode: true });
-      useRabbitMQ(
-        "main",
-        "send",
-        JSON.stringify({
-          event: "domain:clear_cache",
-          data: { domain: domain.name },
-        })
-      );
     });
     return false;
   } catch (error) {
