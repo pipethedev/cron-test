@@ -12,7 +12,6 @@ connectToMongo(process.env.MONGODB_URI || "");
 const service = restana({});
 const redisClient = container.resolve(delay(() => RedisClient));
 
-
 proxy.changeDefault();
 proxy.register(
   process.env.DOMAIN || "brimble.test",
@@ -35,24 +34,17 @@ useRabbitMQ("proxy", "consume");
 useRabbitMQ("main", "send", JSON.stringify({ event: "Test", data: "Working" }));
 
 service.get("/", (_, res) => {
-  return res.send({
-    status: 200,
-    message: "Proxy server running",
-  });
+  return res.send({ status: 200, message: "Proxy server running" });
 });
 
 service.post("/", (req, res) => {
-  const apiKey = req.headers['brimble-proxy-key'];
+  const apiKey = req.headers["brimble-proxy-key"];
   if (apiKey === process.env.PROXY_AUTH_KEY) {
     console.log("Running proxy triggered by AWS");
     keepInSync({ checkLast: true });
-    return res.send({
-      status: 200,
-      message: "Proxy triggered",
-    });
+    return res.send({ status: 200, message: "Proxy triggered" });
   }
 });
-
 
 socket.on("end", function () {
   socket.disconnect();

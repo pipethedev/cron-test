@@ -1,11 +1,10 @@
-import { IDomain, IProject } from "@brimble/models";
+import { Domain, IDomain, IProject } from "@brimble/models";
 import axios from "axios";
 import fs from "fs";
 import { Project } from "@brimble/models";
 import { prioritize, proxy, useRabbitMQ } from "../config";
 import { QueueClass } from "../queue";
 import { Job, UnrecoverableError } from "bullmq";
-import { LeanDocument } from "mongoose";
 import { log } from "@brimble/utils";
 
 const projs: string[] = [];
@@ -119,7 +118,9 @@ const starter = async (data: any) => {
     await axios(urlString);
 
     domains.forEach((domain: IDomain) => {
-      proxy.register(domain.name, urlString, { isWatchMode: true });
+      if (domain.name.includes(".brimble.app") || domain.ssl?.enabled) {
+        proxy.register(domain.name, urlString, { isWatchMode: true });
+      }
     });
     return false;
   } catch (error) {
