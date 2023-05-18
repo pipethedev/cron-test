@@ -14,21 +14,15 @@ const keepInSyncWorker = async (job: Job) => {
   try {
     if (!id || id === "undefined") return;
 
-    const project = await Project.findById(id).populate(["domains", "log"]);
+    const project = await Project.findById(id)
+      .populate({ path: "domains", select: "name ssl" })
+      .populate("log");
 
     if (!project) return;
 
-    const { domains, port, dir, name, log, repo, lastProcessed } = project;
+    const { name, lastProcessed } = project;
 
-    const shouldStart = await starter({
-      domains,
-      port,
-      dir,
-      name,
-      log,
-      id,
-      repo,
-    });
+    const shouldStart = await starter(project);
     if (!shouldStart) return;
     if (checkLast && !prioritize.includes(name)) {
       const now = Date.now();
@@ -76,7 +70,10 @@ export const projectSync = new QueueClass("project-sync", keepInSyncWorker);
 export const keepInSync = async (opt?: { checkLast?: boolean }) => {
   if (opt?.checkLast)
     log.info(`Running keepInSync with checkLast: ${opt?.checkLast}`);
-  const projects = await Project.find();
+  const projects = await Project.find().populate({
+    path: "domains",
+    select: "name ssl",
+  });
   projs.length = 0;
   const data = projects
     .sort((a, b) => {
@@ -94,7 +91,6 @@ export const keepInSync = async (opt?: { checkLast?: boolean }) => {
       return Number(b.createdAt) - Number(a.createdAt);
     })
     .map(async (project: IProject) => {
-      await project.populate("domains").execPopulate();
       const shouldStart = await starter(project);
       if (shouldStart) {
         projs.push(project.name);
@@ -118,7 +114,7 @@ const starter = async (data: any) => {
     await axios(urlString);
 
     domains.forEach((domain: IDomain) => {
-      if (domain.name.includes(".brimble.app") || domain.ssl?.enabled) {
+      if (domain.name.endsWith(".brimble.app") || domain.ssl?.enabled) {
         proxy.register(domain.name, urlString, { isWatchMode: true });
       }
     });
