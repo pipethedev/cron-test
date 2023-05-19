@@ -115,6 +115,7 @@ const starter = async (data: any) => {
 
     domains.forEach((domain: IDomain) => {
       if (domain.name.endsWith(".brimble.app") || domain.ssl?.enabled) {
+        proxy.unregister(domain.name);
         proxy.register(domain.name, urlString, { isWatchMode: true });
       }
     });
