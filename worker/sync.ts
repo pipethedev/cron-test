@@ -82,12 +82,8 @@ export const keepInSync = async (opt?: { checkLast?: boolean }) => {
       if (aIndex !== -1 && bIndex !== -1) {
         return aIndex - bIndex;
       }
-      if (aIndex !== -1) {
-        return -1;
-      }
-      if (bIndex !== -1) {
-        return 1;
-      }
+      if (aIndex !== -1) return -1;
+      if (bIndex !== -1) return 1;
       return Number(b.createdAt) - Number(a.createdAt);
     })
     .map(async (project: IProject) => {

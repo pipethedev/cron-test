@@ -24,4 +24,3 @@ jobs:
             git reset --hard && git pull
             npm install -g yarn
             yarn && yarn build
-            yarn pm2:reload
