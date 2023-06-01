@@ -107,7 +107,7 @@ const starter = async (data: any) => {
   const urlString = `http://127.0.0.1:${port}`;
 
   try {
-    await axios(urlString);
+    await axios(urlString, { timeout: 60000 });
 
     domains.forEach((domain: IDomain) => {
       if (domain.name.endsWith(".brimble.app") || domain.ssl?.enabled) {
