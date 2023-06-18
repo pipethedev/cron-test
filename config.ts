@@ -7,14 +7,23 @@ import { rabbitMQ } from "./rabbitmq";
 import { log } from "@brimble/utils";
 dotenv.config();
 
-const redbird = require("redbird")({
-  port: process.env.PROXY_PORT || 9999,
-  bunyan: false,
-});
+export const PORT = {
+  api: process.env.API_PORT || 5000,
+  proxy: process.env.PROXY_PORT || 9999,
+  app: process.env.PORT || 3000,
+  auth: process.env.AUTH_PORT || 8000,
+};
+
+export const DOMAIN = {
+  app: `${process.env.DOMAIN}` || "brimble.test",
+  auth: `${process.env.DOMAIN}/auth` || "brimble.test/auth",
+  proxy: `${process.env.DOMAIN}/proxy` || "brimble.test/proxy",
+};
+
+const redbird = require("redbird")({ port: PORT.proxy, bunyan: false });
+const API_URL = DOMAIN.app || `http://127.0.0.1:${PORT.api}`;
 
 export const redis = container.resolve(delay(() => RedisClient)).get();
-const API_URL =
-  process.env.DOMAIN || `http://127.0.0.1:${process.env.API_PORT || 5000}`;
 export const socket = io(API_URL, { transports: ["websocket"] });
 socket.on("connect", () => {
   socket.emit("identify", { app: "proxy" });
@@ -31,7 +40,7 @@ export const queue = (name: string) =>
 
 export const proxy = {
   // create a register function to register the domain with the proxy
-  async register(domain: string, ip: string, { id, isWatchMode }: any) {
+  async register(domain: string, ip: string, { id, isWatchMode }: any = {}) {
     try {
       redbird.register(domain, ip);
       if (!isWatchMode) {
@@ -88,7 +97,11 @@ export const useRabbitMQ = async (
           log.info({ event, data });
           if (event === "domain-register") {
             proxy.unregister(data.domain);
-            proxy.register(data.domain, data.ip, { id: data.id });
+            proxy.register(
+              data.domain,
+              data.ip || `http://127.0.0.1:${PORT.app}`,
+              { id: data.id }
+            );
           }
           if (event === "domain-unregister") proxy.unregister(data.domain);
         }
