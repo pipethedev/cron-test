@@ -1,4 +1,4 @@
-import { Request, Response, Router } from "express";
+import { Router } from "express";
 import { createProxyServer } from "http-proxy";
 import { keepInSync } from "./worker/sync";
 import { verify } from "./middleware";
@@ -10,19 +10,24 @@ const map = createProxyServer();
 map.on("error", (e) => log.error(e));
 
 router
-  .get("/", verify, async (req: Request, res: Response) => {
+  .get("/", verify, async (req, res) => {
     const { domain } = req.body;
 
     map.web(req, res, { target: `http://127.0.0.1:${domain.port}` });
   })
-  .post("/proxy", (req: any, res: any) => {
+  .post("/proxy", (req, res) => {
     const apiKey = req.headers["brimble-proxy-key"];
     if (apiKey === process.env.PROXY_AUTH_KEY) {
       console.log("Running proxy triggered by AWS");
       keepInSync({ checkLast: true });
-      return res.send({ status: 200, message: "Proxy triggered" });
+      return res.json({ status: 200, message: "Proxy triggered" });
     }
-    return res.send({ status: 401, message: "Unauthorized" });
+    return res.status(401).json({ status: 401, message: "Unauthorized" });
+  })
+  .all("*", verify, async (req, res) => {
+    const { domain } = req.body;
+
+    map.web(req, res, { target: `http://127.0.0.1:${domain.port}` });
   });
 
 export default router;
