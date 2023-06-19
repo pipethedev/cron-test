@@ -47,7 +47,7 @@ function authorize() {
           }
         }
       )
-      .then((response) => {
+      .then(({ data }) => {
         document.cookie = `x-brimble-session=${data.data.token}`;
 
         setTimeout(() => {
