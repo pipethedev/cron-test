@@ -1,42 +1,67 @@
 const submitBtn = document.getElementById("submitBtn");
 const spinner = document.getElementById("spinner");
 const submitText = document.getElementById("submitText");
+const passwordInput = document.getElementById("password");
+const errorMessage = document.getElementById("errorMsg");
+
+passwordInput.addEventListener("keydown", function(event) {
+  if (event.keyCode === 13 || event.code === "Enter") {
+    submitForm();
+  }
+});
 
 function authorize() {
-  submitBtn.disabled = true;
-
   spinner.classList.remove("hidden");
-
-  submitText.textContent = "Processing...";
 
   const url = window.location.href;
   const withoutProtocol = url.replace(/^https?:\/\//, "");
   const withoutTrailingSlash = withoutProtocol.replace(/\/$/, "");
   const domain = withoutTrailingSlash.split("/")[0];
 
-  const passwordInput = document.getElementById("password");
   const password = passwordInput.value;
 
-  const payload = { domain, password };
+  if (password === "") {
+    passwordInput.classList.add("border-2");
+    passwordInput.classList.add("border-rose-600");
+    errorMessage.textContent = "This field is required.";
+    errorMessage.style.display = "block";
+  } else {
+    submitBtn.disabled = true;
 
-  axios
-    .post("https://api.brimble.io/v1/projects/password-protect/login", payload, {
-      headers: { "Content-Type": "application/json" },
-    })
-    .then(({ data }) => {
-      // tweak
-      document.cookie = `x-brimble-session=${data.data.token}`;
-      setTimeout(() => {
-        location.reload();
-      }, 2000);
-    })
-    .catch((error) => {
-      submitBtn.disabled = false;
+    submitText.textContent = "Processing...";
 
-      spinner.classList.add("hidden");
+    passwordInput.classList.remove("border-2");
+    passwordInput.classList.remove("border-rose-600");
+    errorMessage.textContent = "";
+    errorMessage.style.display = "none";
 
-      submitText.textContent = "Submit";
+    const payload = { domain, password };
 
-      alert(error.response.data.message);
-    });
+    axios
+      .post(
+        "https://api.brimble.io/v1/projects/password-protect/login",
+        JSON.stringify(payload),
+        {
+          headers: {
+            "Content-Type": "application/json"
+          }
+        }
+      )
+      .then((response) => {
+        document.cookie = `x-brimble-session=${data.data.token}`;
+
+        setTimeout(() => {
+          location.reload();
+        }, 1000);
+      })
+      .catch((error) => {
+        submitBtn.disabled = false;
+
+        spinner.classList.add("hidden");
+
+        submitText.textContent = "Continue";
+
+        alert(error.response.data.message);
+      });
+  }
 }
