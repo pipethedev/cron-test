@@ -95,7 +95,7 @@ export const keepInSync = async (opt?: { checkLast?: boolean }) => {
 };
 
 const starter = async (data: any) => {
-  const { _id, domains, port, dir, name, repo, passwordEnabled, pid } = data;
+  const { _id, domains, port, dir, name, repo, passwordEnabled, pid, status } = data;
 
   if (!name) return false;
 
@@ -128,6 +128,8 @@ const starter = async (data: any) => {
 
       return false;
     } else {
+      if(status === "FAILED") return false;
+
       if (!dir || !fs.existsSync(dir)) {
         return repo && repo.installationId ? { redeploy: true } : false;
       }
