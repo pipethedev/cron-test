@@ -6,6 +6,7 @@ import { PORT, prioritize, proxy, useRabbitMQ } from "../config";
 import { QueueClass } from "../queue";
 import { Job, UnrecoverableError } from "bullmq";
 import { log } from "@brimble/utils";
+import { exec } from "child_process";
 
 const projs: string[] = [];
 const keepInSyncWorker = async (job: Job) => {
@@ -28,14 +29,7 @@ const keepInSyncWorker = async (job: Job) => {
     if (checkLast && !prioritize.includes(name)) {
       const now = Date.now();
       const timeElapsed = now - (lastProcessed || 0);
-      if (
-        (typeof shouldStart === "object" &&
-          shouldStart.redeploy &&
-          timeElapsed < 1000 * 60 * 30) ||
-        (typeof shouldStart === "boolean" && timeElapsed < 1000 * 60 * 5)
-      ) {
-        return;
-      }
+      if (timeElapsed < 1000 * 60 * 60 * 24) return;
 
       await Project.updateOne(
         { _id: id },
@@ -101,7 +95,7 @@ export const keepInSync = async (opt?: { checkLast?: boolean }) => {
 };
 
 const starter = async (data: any) => {
-  const { domains, port, dir, name, repo, passwordEnabled } = data;
+  const { _id, domains, port, dir, name, repo, passwordEnabled, pid } = data;
 
   if (!name) return false;
 
@@ -120,11 +114,24 @@ const starter = async (data: any) => {
         );
       }
     });
+
+    await Project.updateOne(
+      { _id },
+      { lastProcessed: 0 },
+      { timestamps: false }
+    );
     return false;
-  } catch (error) {
-    if (!dir || !fs.existsSync(dir)) {
-      return repo && repo.installationId ? { redeploy: true } : false;
+  } catch (err) {
+    const error = err as any;
+    if (error.code === "ECONNABORTED" || error.message === "timeout") {
+      setTimeout(() => exec(`kill -9 ${pid}`), 5000);
+
+      return false;
+    } else {
+      if (!dir || !fs.existsSync(dir)) {
+        return repo && repo.installationId ? { redeploy: true } : false;
+      }
+      return true;
     }
-    return true;
   }
 };
