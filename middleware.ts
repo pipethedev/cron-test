@@ -9,13 +9,13 @@ export const verify = async (
 ) => {
   const token = req.cookies["x-brimble-session"]; // domain id
   if (!token) {
-    return res.status(401).sendFile("password.html", { root: "public" });
+    return res.status(401).render('password');
   }
 
   try {
     const decoded = decodeToken(token);
     if (!decoded) {
-      return res.status(401).sendFile("password.html", { root: "public" });
+      return res.status(401).render('password');
     }
 
     const { id } = decoded as any;
@@ -26,13 +26,13 @@ export const verify = async (
     });
 
     if (!domain) {
-      return res.status(401).sendFile("password.html", { root: "public" });
+      return res.status(401).render('password');
     }
 
     req.body.domain = { name: domain.name, port: domain.project.port };
 
     next();
   } catch (e) {
-    return res.status(401).sendFile("password.html", { root: "public" });
+    return res.status(401).render('password');
   }
 };

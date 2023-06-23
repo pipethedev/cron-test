@@ -2,5 +2,5 @@
   "watch": ".",
   "ext": "ts,json,hbs",
   "ignore": ["src/**/*.spec.ts"],
-  "exec": "yarn build && yarn start:dev"
+  "exec": "yarn build && yarn start"
 }
