@@ -1,4 +1,4 @@
-name: Brimble Proxy Deployment
+name: Brimble Uptime Deployment
 
 on:
   # Triggers the workflow on push or pull request events but only for the main branch
@@ -20,7 +20,8 @@ jobs:
           username: ${{ secrets.BRIMBLE_USER }}
           key: ${{ secrets.BRIMBLE_KEY }}
           script: |
-            cd /home/abraham/proxy
+            cd /brimble/uptime
             git reset --hard && git pull
-            npm install -g yarn
+            export NVM_DIR=~/.nvm
+            source ~/.nvm/nvm.sh
             yarn && yarn build
