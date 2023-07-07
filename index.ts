@@ -24,7 +24,7 @@ app.use(express.static(path.join(process.cwd(), "public")));
 app.set("view engine", "hbs");
 app.use("/", router);
 
-app.listen(5555);
+app.listen(process.env.PORT || 3030);
 
 process.on("SIGTERM", closeApp);
 process.on("SIGINT", closeApp);

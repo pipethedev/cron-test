@@ -65,9 +65,7 @@ export const projectSync = new QueueClass("project-sync", keepInSyncWorker);
 export const keepInSync = async (opt?: { checkLast?: boolean }) => {
   if (opt?.checkLast)
     log.info(`Running keepInSync with checkLast: ${opt?.checkLast}`);
-  const projects = await Project.find({
-    user_id: "61fcc8811dbf85d9f0d26871",
-  }).populate({
+  const projects = await Project.find().populate({
     path: "domains",
     select: "name ssl",
   });
