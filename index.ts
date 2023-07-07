@@ -1,5 +1,5 @@
 import "reflect-metadata";
-import { DOMAIN, PORT, proxy, socket, useRabbitMQ } from "./config";
+import { useRabbitMQ } from "./config";
 import { connectToMongo, closeMongo } from "@brimble/models";
 import { container, delay } from "tsyringe";
 import { RedisClient } from "./redis/redis-client";
@@ -14,36 +14,24 @@ const app: Application = express();
 const redisClient = container.resolve(delay(() => RedisClient));
 connectToMongo(process.env.MONGODB_URI || "");
 
-proxy.changeDefault();
-proxy.register(DOMAIN.app, `http://127.0.0.1:${PORT.api}`);
-proxy.register(DOMAIN.auth, `http://127.0.0.1:${PORT.auth}`);
-proxy.register(DOMAIN.proxy, `http://127.0.0.1:${PORT.app}/proxy`);
-
 keepInSync();
-useRabbitMQ("proxy", "consume");
-useRabbitMQ("main", "send", JSON.stringify({ event: "Test", data: "Working" }));
+useRabbitMQ("mainly", "send", JSON.stringify({ event: "Test", data: "Working" }));
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true, limit: "50mb" }));
 app.use(cookieParser());
 app.use(express.static(path.join(process.cwd(), "public")));
-app.set('view engine', 'hbs')
+app.set("view engine", "hbs");
 app.use("/", router);
 
-app.listen(PORT.app);
-
-socket.on("end", () => {
-  socket.disconnect();
-  socket.close();
-});
+app.listen(5555);
 
 process.on("SIGTERM", closeApp);
 process.on("SIGINT", closeApp);
 
 function closeApp() {
   console.log("Shutting down gracefully");
-  socket.disconnect();
-  socket.close();
+
   redisClient.close();
   rabbitMQ.close();
   closeMongo();
