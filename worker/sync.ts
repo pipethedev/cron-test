@@ -2,7 +2,7 @@ import { IDomain, IProject } from "@brimble/models";
 import axios from "axios";
 import fs from "fs";
 import { Project } from "@brimble/models";
-import { PORT, prioritize, proxy, useRabbitMQ } from "../config";
+import { prioritize, useRabbitMQ } from "../config";
 import { QueueClass } from "../queue";
 import { Job, UnrecoverableError } from "bullmq";
 import { log } from "@brimble/utils";
@@ -42,7 +42,7 @@ const keepInSyncWorker = async (job: Job) => {
     const priority = filterPriority ? filterPriority.indexOf(name) + 1 : 0;
 
     return useRabbitMQ(
-      "main",
+      "mainly",
       "send",
       JSON.stringify({
         event: "redeploy",
@@ -95,25 +95,14 @@ export const keepInSync = async (opt?: { checkLast?: boolean }) => {
 };
 
 const starter = async (data: any) => {
-  const { _id, domains, port, dir, name, repo, passwordEnabled, pid, status } = data;
+  const { _id, port, dir, name, repo, pid, status, ip } = data;
 
   if (!name) return false;
 
-  const urlString = `http://127.0.0.1:${port}`;
+  const urlString = `http://${ip}:${port}`;
 
   try {
     await axios(urlString, { timeout: 60000 });
-
-    domains.forEach((domain: IDomain) => {
-      if (domain.name.endsWith(".brimble.app") || domain.ssl?.enabled) {
-        proxy.unregister(domain.name);
-        proxy.register(
-          domain.name,
-          passwordEnabled ? `http://127.0.0.1:${PORT.app}` : urlString,
-          { isWatchMode: true }
-        );
-      }
-    });
 
     await Project.updateOne(
       { _id },
@@ -128,7 +117,7 @@ const starter = async (data: any) => {
 
       return false;
     } else {
-      if(status === "FAILED") return false;
+      if (status === "FAILED") return false;
 
       if (!dir || !fs.existsSync(dir)) {
         return repo && repo.installationId ? { redeploy: true } : false;

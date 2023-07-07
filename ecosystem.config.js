@@ -1,7 +1,7 @@
 module.exports = {
   apps: [
     {
-      name: "poc-proxy",
+      name: "uptime",
       script: "./dist/index.js",
       watch: "./dist",
       env_production: {

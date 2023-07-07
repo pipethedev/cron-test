@@ -1,4 +1,3 @@
-import { io } from "socket.io-client";
 import dotenv from "dotenv";
 import { Queue } from "bullmq";
 import { RedisClient } from "./redis/redis-client";
@@ -7,27 +6,7 @@ import { rabbitMQ } from "./rabbitmq";
 import { log } from "@brimble/utils";
 dotenv.config();
 
-export const PORT = {
-  api: process.env.API_PORT || 5000,
-  proxy: process.env.PROXY_PORT || 9999,
-  app: process.env.PORT || 3000,
-  auth: process.env.AUTH_PORT || 8000,
-};
-
-export const DOMAIN = {
-  app: `${process.env.DOMAIN}` || "brimble.test",
-  auth: `${process.env.DOMAIN}/auth` || "brimble.test/auth",
-  proxy: `${process.env.DOMAIN}/proxy` || "brimble.test/proxy",
-};
-
-const redbird = require("redbird")({ port: PORT.proxy, bunyan: false });
-const API_URL = DOMAIN.app || `http://127.0.0.1:${PORT.api}`;
-
 export const redis = container.resolve(delay(() => RedisClient)).get();
-export const socket = io(API_URL, { transports: ["websocket"] });
-socket.on("connect", () => {
-  socket.emit("identify", { app: "proxy" });
-});
 
 export const queue = (name: string) =>
   new Queue(name, {
@@ -37,45 +16,6 @@ export const queue = (name: string) =>
       removeOnFail: true,
     },
   });
-
-export const proxy = {
-  // create a register function to register the domain with the proxy
-  async register(domain: string, ip: string, { id, isWatchMode }: any = {}) {
-    try {
-      redbird.register(domain, ip);
-      if (!isWatchMode) {
-        if (id) {
-          socket.emit(`${id}-domain_mapped`, {
-            message: "Domain mapped successfully",
-            domain,
-          });
-        } else {
-          socket.emit("domain-success", {
-            message: "Proxy server started",
-            domain,
-          });
-        }
-      }
-    } catch (err) {
-      log.error(err);
-    }
-  },
-
-  // create an unregister function to unregister the domain with the proxy
-  unregister(domain: string) {
-    redbird.unregister(domain);
-  },
-
-  changeDefault() {
-    redbird.notFound((req: any, res: any) => {
-      // TODO: Create Brimble 404 page
-      const host = req.headers.host;
-      const requestId = req.headers["x-brimble-id"];
-      res.statusCode = 404;
-      res.end(`Deployment not found for ${host}`);
-    });
-  },
-};
 
 const connection = rabbitMQ;
 const connect = connection.connect();
@@ -91,19 +31,9 @@ export const useRabbitMQ = async (
       await connection.sendMessage(name, message);
     } else if (type === "consume") {
       await connection.consume(name, (msg) => {
-        log.info(`Received message from ${name} queue: ${msg}`);
         if (msg) {
           const { event, data } = JSON.parse(msg.toString());
           log.info({ event, data });
-          if (event === "domain-register") {
-            proxy.unregister(data.domain);
-            proxy.register(
-              data.domain,
-              data.ip || `http://127.0.0.1:${PORT.app}`,
-              { id: data.id }
-            );
-          }
-          if (event === "domain-unregister") proxy.unregister(data.domain);
         }
       });
     } else {
