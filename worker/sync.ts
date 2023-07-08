@@ -5,8 +5,6 @@ import { Project } from "@brimble/models";
 import { prioritize, useRabbitMQ } from "../config";
 import { QueueClass } from "../queue";
 import { Job, UnrecoverableError } from "bullmq";
-import { log } from "@brimble/utils";
-import { exec } from "child_process";
 
 const projs: string[] = [];
 const keepInSyncWorker = async (job: Job) => {
@@ -55,7 +53,7 @@ const keepInSyncWorker = async (job: Job) => {
       })
     );
   } catch (error: any) {
-    log.error(error.message);
+    console.error(error.message);
     throw new UnrecoverableError(error.message);
   }
 };
@@ -64,7 +62,7 @@ export const projectSync = new QueueClass("project-sync", keepInSyncWorker);
 
 export const keepInSync = async (opt?: { checkLast?: boolean }) => {
   if (opt?.checkLast)
-    log.info(`Running keepInSync with checkLast: ${opt?.checkLast}`);
+    console.info(`Running keepInSync with checkLast: ${opt?.checkLast}`);
   const projects = await Project.find().populate({
     path: "domains",
     select: "name ssl",

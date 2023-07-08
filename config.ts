@@ -3,7 +3,6 @@ import { Queue } from "bullmq";
 import { RedisClient } from "./redis/redis-client";
 import { container, delay } from "tsyringe";
 import { rabbitMQ } from "./rabbitmq";
-import { log } from "@brimble/utils";
 dotenv.config();
 
 export const redis = container.resolve(delay(() => RedisClient)).get();
@@ -33,14 +32,14 @@ export const useRabbitMQ = async (
       await connection.consume(name, (msg) => {
         if (msg) {
           const { event, data } = JSON.parse(msg.toString());
-          log.info({ event, data });
+          console.info({ event, data });
         }
       });
     } else {
       throw new Error("Invalid type");
     }
   } catch (err) {
-    log.error(err);
+    console.error(err);
   }
 };
 

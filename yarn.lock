@@ -11,20 +11,20 @@
     debug "^4.3.4"
     safe-buffer "~5.1.2"
 
-"@brimble/models@^1.4.73":
-  version "1.4.73"
-  resolved "https://registry.yarnpkg.com/@brimble/models/-/models-1.4.73.tgz#40c2b865fcd92e9dd7ddfc09fab79a9c7b254f16"
-  integrity sha512-gEpd7TflZoGcLjE6mr+lKcjhQJNqSjdilVaaatVXvdqmnLFR6MDsPquiAjuZ0OVTk25uJsWGHdMwjfaiTsLcSg==
+"@brimble/models@^1.4.87":
+  version "1.4.87"
+  resolved "https://registry.yarnpkg.com/@brimble/models/-/models-1.4.87.tgz#217a2436788fea56145fe61ceaf6c40c3948f943"
+  integrity sha512-Nu60eCqWa372+P+2mqW8A08WLBHmwcOsUG0edcV6+K0MC0wafm4Db3FPkE96diHfq9KpTStCW8uLPNoY559KDw==
   dependencies:
-    "@brimble/utils" "^1.5.8"
+    "@brimble/utils" "^1.5.10"
     dotenv "^8.2.0"
     mongoose "^5.8.11"
     uuid "^8.3.2"
 
-"@brimble/utils@^1.5.8":
-  version "1.5.8"
-  resolved "https://registry.yarnpkg.com/@brimble/utils/-/utils-1.5.8.tgz#b6a4758f97aa6f5f7d3338e6f254b619e5a0ade8"
-  integrity sha512-aj14P6CtNg41UwS8lP2Tb95edkofJYXFGtrdRXTxP41Mbbtaa5CY6QV7nKnn/8sQLlMvV6O9Yl2MkFxVC++DEw==
+"@brimble/utils@^1.5.10":
+  version "1.5.10"
+  resolved "https://registry.yarnpkg.com/@brimble/utils/-/utils-1.5.10.tgz#fff71b52a613145adfb862c659cc7a59bac4670a"
+  integrity sha512-XRYn+2aPs5m2OtWeXWcA7PvDmMIpTVLht9qOecKDc+iZpf0NXyEof7q6x5T3vs4iWvsfp1EZ+sTLKQcQ2eewnQ==
   dependencies:
     crypto-js "^4.1.1"
     pino "^8.6.0"

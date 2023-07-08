@@ -2,7 +2,6 @@ import { Router } from "express";
 import { createProxyServer } from "http-proxy";
 import { keepInSync } from "./worker/sync";
 import { verify } from "./middleware";
-import { log } from "@brimble/utils";
 import { container } from "tsyringe";
 import LoginService from "./service/login.service";
 
@@ -11,7 +10,7 @@ const map = createProxyServer();
 
 const loginService = container.resolve(LoginService);
 
-map.on("error", (e) => log.error(e));
+map.on("error", (e) => console.error(e));
 
 router
   .get("/", verify, async (req, res) => {
