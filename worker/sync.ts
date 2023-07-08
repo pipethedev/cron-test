@@ -1,6 +1,5 @@
-import { IDomain, IProject } from "@brimble/models";
+import { IProject } from "@brimble/models";
 import axios from "axios";
-import fs from "fs";
 import { Project } from "@brimble/models";
 import { prioritize, useRabbitMQ } from "../config";
 import { QueueClass } from "../queue";
@@ -93,7 +92,7 @@ export const keepInSync = async (opt?: { checkLast?: boolean }) => {
 };
 
 const starter = async (data: any) => {
-  const { _id, port, dir, name, repo, pid, status, ip } = data;
+  const { _id, port, name, status, ip } = data;
 
   if (!name) return false;
 
@@ -114,9 +113,6 @@ const starter = async (data: any) => {
     } else {
       if (status === "FAILED") return false;
 
-      if (!dir || !fs.existsSync(dir)) {
-        return repo && repo.installationId ? { redeploy: true } : false;
-      }
       return true;
     }
   }

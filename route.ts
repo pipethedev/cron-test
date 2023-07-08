@@ -16,7 +16,7 @@ router
   .get("/", verify, async (req, res) => {
     const { domain } = req.body;
 
-    map.web(req, res, { target: `http://127.0.0.1:${domain.port}` });
+    map.web(req, res, { target: `http://${domain.ip}:${domain.port}` });
   })
   .post("/authorize-login", async (req, res) => {
     await loginService
@@ -43,7 +43,7 @@ router
   .all("*", verify, async (req, res) => {
     const { domain } = req.body;
 
-    map.web(req, res, { target: `http://127.0.0.1:${domain.port}` });
+    map.web(req, res, { target: `http://${domain.ip}:${domain.port}` });
   });
 
 export default router;
