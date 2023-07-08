@@ -42,7 +42,7 @@ const keepInSyncWorker = async (job: Job) => {
     const priority = filterPriority ? filterPriority.indexOf(name) + 1 : 0;
 
     return useRabbitMQ(
-      "mainly",
+      "main",
       "send",
       JSON.stringify({
         event: "redeploy",
@@ -110,11 +110,8 @@ const starter = async (data: any) => {
       { timestamps: false }
     );
     return false;
-  } catch (err) {
-    const error = err as any;
+  } catch (error: any) {
     if (error.code === "ECONNABORTED" || error.message === "timeout") {
-      setTimeout(() => exec(`kill -9 ${pid}`), 5000);
-
       return false;
     } else {
       if (status === "FAILED") return false;

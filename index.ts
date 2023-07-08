@@ -15,7 +15,7 @@ const redisClient = container.resolve(delay(() => RedisClient));
 connectToMongo(process.env.MONGODB_URI || "");
 
 keepInSync();
-useRabbitMQ("mainly", "send", JSON.stringify({ event: "Test", data: "Working" }));
+useRabbitMQ("main", "send", JSON.stringify({ event: "Test", data: "Working" }));
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true, limit: "50mb" }));
