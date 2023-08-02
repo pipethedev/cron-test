@@ -34,7 +34,7 @@ router
   .post("/keep-alive", (req, res) => {
     const apiKey = req.headers["brimble-proxy-key"];
     if (apiKey === process.env.PROXY_AUTH_KEY) {
-      console.log("Running proxy triggered by AWS");
+      console.log("Running proxy triggered by DO");
       keepInSync({ lastChecked: true });
       return res.json({ status: 200, message: "Proxy triggered" });
     }

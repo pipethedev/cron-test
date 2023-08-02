@@ -119,7 +119,7 @@ const starter = async (
     return false;
   } catch (error: any) {
     if (opt.capture) {
-      captureException(new Error("🚨 Projects not running 🚨"), {
+      captureException(new Error(`🚨 Project ${name} not running 🚨`), {
         tags: {
           project: name,
           status,
