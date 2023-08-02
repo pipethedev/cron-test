@@ -31,7 +31,7 @@ router
         res.redirect(req.headers.referer as string);
       });
   })
-  .post("/proxy", (req, res) => {
+  .post("/keep-alive", (req, res) => {
     const apiKey = req.headers["brimble-proxy-key"];
     if (apiKey === process.env.PROXY_AUTH_KEY) {
       console.log("Running proxy triggered by AWS");
