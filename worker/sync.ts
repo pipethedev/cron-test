@@ -104,11 +104,11 @@ const starter = async (
   const { _id, port, name, status, ip } = data;
 
   if (!name) return false;
-  if(!ip || !port) throw new Error("Missing ip or port");
-
-  const urlString = `http://${ip}:${port}`;
-
   try {
+    if (!ip || !port) throw new Error("Missing ip or port");
+
+    const urlString = `http://${ip}:${port}`;
+
     await axios(urlString, { timeout: 60000 });
 
     await Project.updateOne(
