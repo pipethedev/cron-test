@@ -35,7 +35,7 @@ router
   //   const apiKey = req.headers["brimble-proxy-key"];
   //   if (apiKey === process.env.PROXY_AUTH_KEY) {
   //     console.log("Running proxy triggered by AWS");
-  //     keepInSync({ checkLast: true });
+  //     keepInSync({ lastChecked: true });
   //     return res.json({ status: 200, message: "Proxy triggered" });
   //   }
   //   return res.status(401).json({ status: 401, message: "Unauthorized" });

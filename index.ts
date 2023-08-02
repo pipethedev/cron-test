@@ -9,6 +9,7 @@ import path from "path";
 import express, { Application } from "express";
 import router from "./route";
 import cookieParser from "cookie-parser";
+import * as Sentry from "@sentry/node";
 
 const app: Application = express();
 const redisClient = container.resolve(delay(() => RedisClient));
@@ -23,8 +24,13 @@ app.use(cookieParser());
 app.use(express.static(path.join(process.cwd(), "public")));
 app.set("view engine", "hbs");
 app.use("/", router);
+app.use(Sentry.Handlers.requestHandler());
+app.use(Sentry.Handlers.tracingHandler());
+app.use(Sentry.Handlers.errorHandler());
 
-app.listen(process.env.PORT || 3030);
+errorTracking(app);
+
+app.listen(process.env.PORT || 3333);
 
 process.on("SIGTERM", closeApp);
 process.on("SIGINT", closeApp);
@@ -37,4 +43,16 @@ function closeApp() {
   closeMongo();
   projectSync.closeWorker();
   process.exit(0);
+}
+
+function errorTracking(app: Application) {
+  Sentry.init({
+    dsn: process.env.SENTRY_DSN,
+    integrations: [
+      new Sentry.Integrations.Http({ tracing: true }),
+      new Sentry.Integrations.Express({ app }),
+      ...Sentry.autoDiscoverNodePerformanceMonitoringIntegrations(),
+    ],
+    tracesSampleRate: 1.0,
+  });
 }

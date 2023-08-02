@@ -4,10 +4,12 @@ import { Project } from "@brimble/models";
 import { prioritize, useRabbitMQ } from "../config";
 import { QueueClass } from "../queue";
 import { Job, UnrecoverableError } from "bullmq";
+import { captureException } from "@sentry/node";
+import moment from "moment";
 
 const projs: string[] = [];
 const keepInSyncWorker = async (job: Job) => {
-  const { id, checkLast } = job.data;
+  const { id, lastChecked } = job.data;
 
   try {
     if (!id || id === "undefined") return;
@@ -21,36 +23,40 @@ const keepInSyncWorker = async (job: Job) => {
 
     const { name, lastProcessed } = project;
 
-    const shouldStart = await starter(project);
-    if (!shouldStart) return;
-    if (checkLast && !prioritize.includes(name)) {
-      const now = Date.now();
-      const timeElapsed = now - (lastProcessed || 0);
-      if (timeElapsed < 1000 * 60 * 60 * 24) return;
+    const shouldStart = await starter(project, {
+      timestamp: lastProcessed,
+      capture: true,
+    });
+    if (shouldStart) {
+      if (lastChecked && !prioritize.includes(name)) {
+        const now = Date.now();
+        const timeElapsed = lastProcessed ? now - lastProcessed : 0;
+        if (timeElapsed < 1000 * 60 * 60 * 24) return;
 
-      await Project.updateOne(
-        { _id: id },
-        { lastProcessed: now },
-        { timestamps: false }
+        await Project.updateOne(
+          { _id: id },
+          { lastProcessed: now },
+          { timestamps: false }
+        );
+      }
+
+      const filterPriority = prioritize.filter((p) => projs.includes(p));
+      const priority = filterPriority ? filterPriority.indexOf(name) + 1 : 0;
+
+      return useRabbitMQ(
+        "main",
+        "send",
+        JSON.stringify({
+          event: "redeploy",
+          data: {
+            projectId: id,
+            upKeep: true,
+            redeploy: typeof shouldStart === "object" ? true : false,
+            priority,
+          },
+        })
       );
     }
-
-    const filterPriority = prioritize.filter((p) => projs.includes(p));
-    const priority = filterPriority ? filterPriority.indexOf(name) + 1 : 0;
-
-    return useRabbitMQ(
-      "main",
-      "send",
-      JSON.stringify({
-        event: "redeploy",
-        data: {
-          projectId: id,
-          upKeep: true,
-          redeploy: typeof shouldStart === "object" ? true : false,
-          priority,
-        },
-      })
-    );
   } catch (error: any) {
     console.error(error.message);
     throw new UnrecoverableError(error.message);
@@ -59,9 +65,9 @@ const keepInSyncWorker = async (job: Job) => {
 
 export const projectSync = new QueueClass("project-sync", keepInSyncWorker);
 
-export const keepInSync = async (opt?: { checkLast?: boolean }) => {
-  if (opt?.checkLast)
-    console.info(`Running keepInSync with checkLast: ${opt?.checkLast}`);
+export const keepInSync = async (opt?: { lastChecked?: boolean }) => {
+  if (opt?.lastChecked)
+    console.info(`Running keepInSync with lastChecked: ${opt?.lastChecked}`);
   const projects = await Project.find().populate({
     path: "domains",
     select: "name ssl",
@@ -79,11 +85,11 @@ export const keepInSync = async (opt?: { checkLast?: boolean }) => {
       return Number(b.createdAt) - Number(a.createdAt);
     })
     .map(async (project: IProject) => {
-      const shouldStart = await starter(project);
+      const shouldStart = await starter(project, { capture: false });
       if (shouldStart) {
         projs.push(project.name);
       }
-      return { data: { id: project._id, checkLast: opt?.checkLast } };
+      return { data: { id: project._id, lastChecked: opt?.lastChecked } };
     });
 
   await Promise.all(data).then(async (d) => {
@@ -91,7 +97,10 @@ export const keepInSync = async (opt?: { checkLast?: boolean }) => {
   });
 };
 
-const starter = async (data: any) => {
+const starter = async (
+  data: any,
+  opt: { timestamp?: number; capture?: boolean } = {}
+) => {
   const { _id, port, name, status, ip } = data;
 
   if (!name) return false;
@@ -108,6 +117,17 @@ const starter = async (data: any) => {
     );
     return false;
   } catch (error: any) {
+    if (opt.capture) {
+      captureException(`Project ${name} is not running`, {
+        tags: {
+          project: name,
+          status,
+          error_code: error.code,
+          error_message: error.message,
+          last_checked: opt.timestamp && `${moment(opt.timestamp).fromNow()}`,
+        },
+      });
+    }
     if (error.code === "ECONNABORTED" || error.message === "timeout") {
       return false;
     } else {
