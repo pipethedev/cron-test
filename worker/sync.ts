@@ -104,6 +104,7 @@ const starter = async (
   const { _id, port, name, status, ip } = data;
 
   if (!name) return false;
+  if(!ip || !port) throw new Error("Missing ip or port");
 
   const urlString = `http://${ip}:${port}`;
 
@@ -118,7 +119,7 @@ const starter = async (
     return false;
   } catch (error: any) {
     if (opt.capture) {
-      captureException(`Project ${name} is not running`, {
+      captureException(new Error("🚨 Projects not running 🚨"), {
         tags: {
           project: name,
           status,

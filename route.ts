@@ -31,15 +31,15 @@ router
         res.redirect(req.headers.referer as string);
       });
   })
-  // .post("/proxy", (req, res) => {
-  //   const apiKey = req.headers["brimble-proxy-key"];
-  //   if (apiKey === process.env.PROXY_AUTH_KEY) {
-  //     console.log("Running proxy triggered by AWS");
-  //     keepInSync({ lastChecked: true });
-  //     return res.json({ status: 200, message: "Proxy triggered" });
-  //   }
-  //   return res.status(401).json({ status: 401, message: "Unauthorized" });
-  // })
+  .post("/proxy", (req, res) => {
+    const apiKey = req.headers["brimble-proxy-key"];
+    if (apiKey === process.env.PROXY_AUTH_KEY) {
+      console.log("Running proxy triggered by AWS");
+      keepInSync({ lastChecked: true });
+      return res.json({ status: 200, message: "Proxy triggered" });
+    }
+    return res.status(401).json({ status: 401, message: "Unauthorized" });
+  })
   .all("*", verify, async (req, res) => {
     const { domain } = req.body;
 
