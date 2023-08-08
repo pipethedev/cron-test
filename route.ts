@@ -4,6 +4,7 @@ import { keepInSync } from "./worker/sync";
 import { verify } from "./middleware";
 import { container } from "tsyringe";
 import LoginService from "./service/login.service";
+import { getDNS } from "./service/dns.service";
 
 const router = Router();
 const map = createProxyServer();
@@ -39,6 +40,11 @@ router
       return res.json({ status: 200, message: "Proxy triggered" });
     }
     return res.status(401).json({ status: 401, message: "Unauthorized" });
+  })
+  .get("/dns", async (req, res) => {
+    const dns = await getDNS(req.query.domain as string);
+
+    return res.json({ data: JSON.parse(dns || "{}") });
   })
   .all("*", verify, async (req, res) => {
     const { domain } = req.body;
