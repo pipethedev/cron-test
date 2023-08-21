@@ -129,11 +129,10 @@ const starter = async (
         },
       });
     }
-    if (error.code === "ECONNABORTED" || error.message === "timeout") {
+    if (error.code === "ECONNABORTED" || error.code === "ETIMEDOUT") {
       return false;
-    } else {
+    } else if (error.code === "ECONNREFUSED" || error.code === "ECONNRESET") {
       if (status === "FAILED") return false;
-
       return true;
     }
   }
