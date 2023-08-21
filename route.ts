@@ -22,14 +22,14 @@ router
   .post("/authorize-login", async (req, res) => {
     await loginService
       .execute(req.body)
+      .then(({ data }) => {
+        res.cookie("x-brimble-session", data?.token, { httpOnly: true });
+        res.redirect(req.headers.referer as string);
+      })
       .catch((error) => {
         return res
           .status(401)
           .render("password", { error: error.response.data.message });
-      })
-      .then(({ data }) => {
-        res.cookie("x-brimble-session", data?.token, { httpOnly: true });
-        res.redirect(req.headers.referer as string);
       });
   })
   .post("/keep-alive", (req, res) => {
