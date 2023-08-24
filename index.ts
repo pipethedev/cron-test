@@ -8,7 +8,6 @@ import { rabbitMQ } from "./rabbitmq";
 import path from "path";
 import express, { Application } from "express";
 import router from "./route";
-import cookieParser from "cookie-parser";
 import * as Sentry from "@sentry/node";
 
 const app: Application = express();
@@ -20,9 +19,7 @@ useRabbitMQ("main", "send", JSON.stringify({ event: "Test", data: "Working" }));
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true, limit: "50mb" }));
-app.use(cookieParser());
 app.use(express.static(path.join(process.cwd(), "public")));
-app.set("view engine", "hbs");
 app.use("/", router);
 app.use(Sentry.Handlers.requestHandler());
 app.use(Sentry.Handlers.tracingHandler());
