@@ -31,7 +31,7 @@ const keepInSyncWorker = async (job: Job) => {
       if (lastChecked && !prioritize.includes(name)) {
         const now = Date.now();
         const timeElapsed = lastProcessed ? now - lastProcessed : 0;
-        if (timeElapsed < 1000 * 60 * 5) return;
+        if (timeElapsed && timeElapsed < 1000 * 60 * 5) return;
 
         await Project.updateOne(
           { _id: id },
