@@ -1,6 +1,6 @@
 import { IProject } from "@brimble/models";
 import axios from "axios";
-import { Project } from "@brimble/models";
+import { Project, Domain } from "@brimble/models";
 import { prioritize, useRabbitMQ } from "../config";
 import { QueueClass } from "../queue";
 import { Job, UnrecoverableError } from "bullmq";
@@ -14,10 +14,7 @@ const keepInSyncWorker = async (job: Job) => {
   try {
     if (!id || id === "undefined") return;
 
-    const project = await Project.findById(id).populate({
-      path: "domains",
-      select: "name ssl",
-    });
+    const project = await Project.findById(id).populate("server");
 
     if (!project) return;
 
@@ -68,10 +65,7 @@ export const projectSync = new QueueClass("project-sync", keepInSyncWorker);
 export const keepInSync = async (opt?: { lastChecked?: boolean }) => {
   if (opt?.lastChecked)
     console.info(`Running keepInSync with lastChecked: ${opt?.lastChecked}`);
-  const projects = await Project.find().populate({
-    path: "domains",
-    select: "name ssl",
-  });
+  const projects = await Project.find().populate("server");
   projs.length = 0;
   const data = projects
     .sort((a, b) => {
@@ -111,9 +105,28 @@ const starter = async (
 
     await axios(urlString, { timeout: 60000 });
 
+    const domains = await Domain.find({ project: _id });
+    if (domains.length !== data.domains.length) {
+      domains.forEach((domain) => {
+        return useRabbitMQ(
+          "proxy",
+          "send",
+          JSON.stringify({
+            event: "domain:map",
+            data: {
+              domain: domain.name,
+              uri: !data.passwordEnabled && `${data.ip}:${data.port}`,
+              host: data.server.name,
+            },
+          })
+        );
+      });
+      data.domains = domains;
+    }
+
     await Project.updateOne(
       { _id },
-      { lastProcessed: 0 },
+      { lastProcessed: 0, domains: data.domains },
       { timestamps: false }
     );
     return false;
