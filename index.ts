@@ -1,4 +1,5 @@
 import "reflect-metadata";
+
 import { useRabbitMQ } from "./config";
 import { connectToMongo, closeMongo } from "@brimble/models";
 import { container, delay } from "tsyringe";
