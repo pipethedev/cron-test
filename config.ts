@@ -43,4 +43,4 @@ export const useRabbitMQ = async (
   }
 };
 
-export const prioritize = ["brimble-client", "brimble-dashboard", "webshots"];
+export const prioritize = ["brimble-client", "brimble-dashboard", "webshots", "klefdev", "ileri"];
