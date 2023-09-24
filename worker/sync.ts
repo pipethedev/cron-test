@@ -4,8 +4,6 @@ import { Project, Domain } from "@brimble/models";
 import { prioritize, useRabbitMQ } from "../config";
 import { QueueClass } from "../queue";
 import { Job, UnrecoverableError } from "bullmq";
-import { captureException } from "@sentry/node";
-import moment from "moment";
 
 const projs: string[] = [];
 const keepInSyncWorker = async (job: Job) => {
@@ -22,21 +20,9 @@ const keepInSyncWorker = async (job: Job) => {
 
     const shouldStart = await starter(project, {
       timestamp: lastProcessed,
-      capture: true,
+      lastChecked,
     });
     if (shouldStart) {
-      if (lastChecked && !prioritize.includes(name)) {
-        const now = Date.now();
-        const timeElapsed = lastProcessed ? now - lastProcessed : 0;
-        if (timeElapsed && timeElapsed < 1000 * 60 * 5) return;
-
-        await Project.updateOne(
-          { _id: id },
-          { lastProcessed: now },
-          { timestamps: false }
-        );
-      }
-
       const filterPriority = prioritize.filter((p) => projs.includes(p));
       const priority = filterPriority ? filterPriority.indexOf(name) + 1 : 0;
 
@@ -63,8 +49,6 @@ const keepInSyncWorker = async (job: Job) => {
 export const projectSync = new QueueClass("project-sync", keepInSyncWorker);
 
 export const keepInSync = async (opt?: { lastChecked?: boolean }) => {
-  if (opt?.lastChecked)
-    console.info(`Running keepInSync with lastChecked: ${opt?.lastChecked}`);
   const projects = await Project.find().populate("server");
   projs.length = 0;
   const data = projects
@@ -79,7 +63,7 @@ export const keepInSync = async (opt?: { lastChecked?: boolean }) => {
       return Number(b.createdAt) - Number(a.createdAt);
     })
     .map(async (project: IProject) => {
-      const shouldStart = await starter(project, { capture: false });
+      const shouldStart = await starter(project);
       if (shouldStart) {
         projs.push(project.name);
       }
@@ -93,7 +77,7 @@ export const keepInSync = async (opt?: { lastChecked?: boolean }) => {
 
 const starter = async (
   data: any,
-  opt: { timestamp?: number; capture?: boolean } = {}
+  opt: { timestamp?: number; lastChecked?: boolean } = {}
 ) => {
   const { _id, port, name, status, ip } = data;
 
@@ -131,21 +115,10 @@ const starter = async (
     );
     return false;
   } catch (error: any) {
-    if (opt.capture) {
-      captureException(new Error(`🚨 Project ${name} not running 🚨`), {
-        tags: {
-          project: name,
-          status,
-          error_code: error.code,
-          error_message: error.message,
-          last_checked: opt.timestamp && `${moment(opt.timestamp).fromNow()}`,
-        },
-      });
-    }
     if (error.code === "ECONNABORTED" || error.code === "ETIMEDOUT") {
       return false;
     } else if (error.code === "ECONNREFUSED" || error.code === "ECONNRESET") {
-      if (status === "FAILED") return false;
+      if (opt.lastChecked && status === "FAILED") return false;
       return true;
     }
   }
