@@ -1,6 +1,8 @@
 import axios from "axios";
-import { Project, Domain } from "@brimble/models";
+import { Project, Domain, PROJECT_STATUS } from "@brimble/models";
 import { prioritize, randomDelay, useRabbitMQ } from "../config";
+
+const done: string[] = [];
 
 export const keepInSync = async (opt: { lastChecked?: boolean } = {}) => {
   const projects = await Project.find()
@@ -23,28 +25,51 @@ export const keepInSync = async (opt: { lastChecked?: boolean } = {}) => {
     }
     if (aIndex !== -1) return -1;
     if (bIndex !== -1) return 1;
-    return Number(b.createdAt) - Number(a.createdAt);
+
+    if (
+      a.status === PROJECT_STATUS.ACTIVE &&
+      b.status === PROJECT_STATUS.FAILED
+    ) {
+      return -1; // a comes before b
+    } else if (
+      a.status === PROJECT_STATUS.FAILED &&
+      b.status === PROJECT_STATUS.ACTIVE
+    ) {
+      return 1; // b comes before a
+    } else {
+      return Number(b.createdAt) - Number(a.createdAt);
+    }
   });
-  let tops = [];
+  const tops = [];
+
   for (const project of projects) {
     const shouldStart = await starter(project, opt);
     if (shouldStart) {
-      tops.push(...prioritize.filter((p) => p === project.name.toLowerCase()));
-      const priority = tops && tops.indexOf(project.name) + 1;
+      if (
+        !opt.lastChecked ||
+        (opt.lastChecked && !done.includes(project.name))
+      ) {
+        tops.push(
+          ...prioritize.filter((p) => p === project.name.toLowerCase())
+        );
+        const priority = tops && tops.indexOf(project.name) + 1;
+        done.push(project.name);
 
-      useRabbitMQ(
-        "main",
-        "send",
-        JSON.stringify({
-          event: "redeploy",
-          data: { projectId: project._id, upKeep: true, priority },
-        })
-      );
-
-      // sleep for max of 20secs
-      await randomDelay(2000, 5000);
+        useRabbitMQ(
+          "main",
+          "send",
+          JSON.stringify({
+            event: "redeploy",
+            data: { projectId: project._id, upKeep: true, priority },
+          })
+        );
+        // sleep for max of 20secs
+        await randomDelay(2000, 5000);
+      }
     }
   }
+  console.log({ done });
+  done.length = 0;
 };
 
 const starter = async (data: any, opt: { lastChecked?: boolean } = {}) => {
