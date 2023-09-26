@@ -1,85 +1,54 @@
-import { IProject } from "@brimble/models";
 import axios from "axios";
 import { Project, Domain } from "@brimble/models";
-import { prioritize, useRabbitMQ } from "../config";
-import { QueueClass } from "../queue";
-import { Job, UnrecoverableError } from "bullmq";
+import { prioritize, randomDelay, useRabbitMQ } from "../config";
 
-const projs: string[] = [];
-const keepInSyncWorker = async (job: Job) => {
-  const { id, lastChecked } = job.data;
+export const keepInSync = async (opt: { lastChecked?: boolean } = {}) => {
+  const projects = await Project.find()
+    .populate({ path: "server", select: "name" })
+    .select([
+      "port",
+      "name",
+      "status",
+      "ip",
+      "server",
+      "passwordEnabled",
+      "domains",
+    ]);
 
-  try {
-    if (!id || id === "undefined") return;
-
-    const project = await Project.findById(id).populate("server");
-
-    if (!project) return;
-
-    const { name, lastProcessed } = project;
-
-    const shouldStart = await starter(project, {
-      timestamp: lastProcessed,
-      lastChecked,
-    });
+  projects.sort((a, b) => {
+    const aIndex = prioritize.indexOf(a.name);
+    const bIndex = prioritize.indexOf(b.name);
+    if (aIndex !== -1 && bIndex !== -1) {
+      return aIndex - bIndex;
+    }
+    if (aIndex !== -1) return -1;
+    if (bIndex !== -1) return 1;
+    return Number(b.createdAt) - Number(a.createdAt);
+  });
+  let tops = [];
+  for (const project of projects) {
+    const shouldStart = await starter(project, opt);
     if (shouldStart) {
-      const filterPriority = prioritize.filter((p) => projs.includes(p));
-      const priority = filterPriority ? filterPriority.indexOf(name) + 1 : 0;
+      tops.push(...prioritize.filter((p) => p === project.name.toLowerCase()));
+      const priority = tops && tops.indexOf(project.name) + 1;
 
-      return useRabbitMQ(
+      useRabbitMQ(
         "main",
         "send",
         JSON.stringify({
           event: "redeploy",
-          data: {
-            projectId: id,
-            upKeep: true,
-            redeploy: typeof shouldStart === "object" ? true : false,
-            priority,
-          },
+          data: { projectId: project._id, upKeep: true, priority },
         })
       );
+
+      // sleep for max of 20secs
+      await randomDelay(2000, 5000);
     }
-  } catch (error: any) {
-    console.error(error.message);
-    throw new UnrecoverableError(error.message);
   }
 };
 
-export const projectSync = new QueueClass("project-sync", keepInSyncWorker);
-
-export const keepInSync = async (opt?: { lastChecked?: boolean }) => {
-  const projects = await Project.find().populate("server");
-  projs.length = 0;
-  const data = projects
-    .sort((a, b) => {
-      const aIndex = prioritize.indexOf(a.name);
-      const bIndex = prioritize.indexOf(b.name);
-      if (aIndex !== -1 && bIndex !== -1) {
-        return aIndex - bIndex;
-      }
-      if (aIndex !== -1) return -1;
-      if (bIndex !== -1) return 1;
-      return Number(b.createdAt) - Number(a.createdAt);
-    })
-    .map(async (project: IProject) => {
-      const shouldStart = await starter(project);
-      if (shouldStart) {
-        projs.push(project.name);
-      }
-      return { data: { id: project._id, lastChecked: opt?.lastChecked } };
-    });
-
-  await Promise.all(data).then(async (d) => {
-    await projectSync.executeBulk(d.map((d) => ({ data: d.data })));
-  });
-};
-
-const starter = async (
-  data: any,
-  opt: { timestamp?: number; lastChecked?: boolean } = {}
-) => {
-  const { _id, port, name, status, ip } = data;
+const starter = async (data: any, opt: { lastChecked?: boolean } = {}) => {
+  const { _id, port, name, status, ip, server } = data;
 
   if (!name) return false;
   try {
@@ -99,20 +68,21 @@ const starter = async (
             event: "domain:map",
             data: {
               domain: domain.name,
-              uri: !data.passwordEnabled && `${data.ip}:${data.port}`,
-              host: data.server.name,
+              uri: !data.passwordEnabled && `${ip}:${port}`,
+              host: server.name,
             },
           })
         );
       });
       data.domains = domains;
+
+      await Project.updateOne(
+        { _id },
+        { domains: data.domains },
+        { timestamps: false }
+      );
     }
 
-    await Project.updateOne(
-      { _id },
-      { lastProcessed: 0, domains: data.domains },
-      { timestamps: false }
-    );
     return false;
   } catch (error: any) {
     if (error.code === "ECONNABORTED" || error.code === "ETIMEDOUT") {

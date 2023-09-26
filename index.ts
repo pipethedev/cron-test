@@ -4,7 +4,7 @@ import { useRabbitMQ } from "./config";
 import { connectToMongo, closeMongo } from "@brimble/models";
 import { container, delay } from "tsyringe";
 import { RedisClient } from "./redis/redis-client";
-import { keepInSync, projectSync } from "./worker/sync";
+import { keepInSync } from "./worker/sync";
 import { rabbitMQ } from "./rabbitmq";
 import path from "path";
 import express, { Application } from "express";
@@ -39,7 +39,6 @@ function closeApp() {
   redisClient.close();
   rabbitMQ.close();
   closeMongo();
-  projectSync.closeWorker();
   process.exit(0);
 }
 
