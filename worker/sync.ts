@@ -1,5 +1,5 @@
 import axios from "axios";
-import { Project, Domain, PROJECT_STATUS } from "@brimble/models";
+import { Project, Domain, PROJECT_STATUS, IProject } from "@brimble/models";
 import { prioritize, randomDelay, useRabbitMQ } from "../config";
 
 const done: string[] = [];
@@ -15,6 +15,7 @@ export const keepInSync = async (opt: { lastChecked?: boolean } = {}) => {
       "server",
       "passwordEnabled",
       "domains",
+      "repo",
     ]);
 
   projects.sort((a, b) => {
@@ -68,12 +69,10 @@ export const keepInSync = async (opt: { lastChecked?: boolean } = {}) => {
       }
     }
   }
-  console.log({ done });
-  done.length = 0;
 };
 
-const starter = async (data: any, opt: { lastChecked?: boolean } = {}) => {
-  const { _id, port, name, status, ip, server } = data;
+const starter = async (data: IProject, opt: { lastChecked?: boolean } = {}) => {
+  const { _id, port, name, status, ip, server, repo } = data;
 
   if (!name) return false;
   try {
@@ -113,7 +112,7 @@ const starter = async (data: any, opt: { lastChecked?: boolean } = {}) => {
     if (error.code === "ECONNABORTED" || error.code === "ETIMEDOUT") {
       return false;
     } else if (error.code === "ECONNREFUSED" || error.code === "ECONNRESET") {
-      if (opt.lastChecked && status === "FAILED") return false;
+      if (opt.lastChecked && (status === "FAILED" || !repo?.name)) return false;
       return true;
     }
   }
