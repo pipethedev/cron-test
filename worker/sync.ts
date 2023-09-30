@@ -1,22 +1,27 @@
 import axios from "axios";
-import { Project, Domain, PROJECT_STATUS, IProject } from "@brimble/models";
+import {
+  Project,
+  PROJECT_STATUS,
+  IProject,
+  Preview,
+  IPreview,
+} from "@brimble/models";
 import { prioritize, randomDelay, useRabbitMQ } from "../config";
 
 const done: string[] = [];
+const pr_done: string[] = [];
 
 export const keepInSync = async (opt: { lastChecked?: boolean } = {}) => {
-  const projects = await Project.find()
-    .populate({ path: "server", select: "name" })
-    .select([
-      "port",
-      "name",
-      "status",
-      "ip",
-      "server",
-      "passwordEnabled",
-      "domains",
-      "repo",
-    ]);
+  const projects = await Project.find().select([
+    "port",
+    "name",
+    "status",
+    "ip",
+    "server",
+    "passwordEnabled",
+    "domains",
+    "repo",
+  ]);
 
   projects.sort((a, b) => {
     const aIndex = prioritize.indexOf(a.name);
@@ -68,51 +73,56 @@ export const keepInSync = async (opt: { lastChecked?: boolean } = {}) => {
         await randomDelay(2000, 5000);
       }
     }
+    done.length = 0;
+  }
+
+  const previews = await Preview.find();
+  for (const preview of previews) {
+    const shouldStart = await starter(preview, opt);
+    if (shouldStart) {
+      if (
+        !opt.lastChecked ||
+        (opt.lastChecked && !pr_done.includes(preview.name))
+      ) {
+        pr_done.push(preview.name);
+
+        useRabbitMQ(
+          "main",
+          "send",
+          JSON.stringify({
+            event: "redeploy",
+            data: { preview, upKeep: true },
+          })
+        );
+        // sleep for max of 20secs
+        await randomDelay(2000, 5000);
+      }
+    }
+    pr_done.length = 0;
   }
 };
 
-const starter = async (data: IProject, opt: { lastChecked?: boolean } = {}) => {
-  const { _id, port, name, status, ip, server, repo } = data;
+const starter = async (
+  data: IProject | IPreview,
+  opt: { lastChecked?: boolean } = {}
+) => {
+  const { port, ip } = data;
+  const { status, repo } = data as IProject;
+  const { project } = data as IPreview;
 
-  if (!name) return false;
   try {
     if (!ip || !port) throw new Error("Missing ip or port");
 
     const urlString = `http://${ip}:${port}`;
 
     await axios(urlString, { timeout: 60000 });
-
-    const domains = await Domain.find({ project: _id });
-    if (domains.length !== data.domains.length) {
-      domains.forEach((domain) => {
-        return useRabbitMQ(
-          "proxy",
-          "send",
-          JSON.stringify({
-            event: "domain:map",
-            data: {
-              domain: domain.name,
-              uri: !data.passwordEnabled && `${ip}:${port}`,
-              host: server.name,
-            },
-          })
-        );
-      });
-      data.domains = domains;
-
-      await Project.updateOne(
-        { _id },
-        { domains: data.domains },
-        { timestamps: false }
-      );
-    }
-
     return false;
   } catch (error: any) {
     if (error.code === "ECONNABORTED" || error.code === "ETIMEDOUT") {
       return false;
     } else if (error.code === "ECONNREFUSED" || error.code === "ECONNRESET") {
-      if (opt.lastChecked && (status === "FAILED" || !repo?.name)) return false;
+      if (!project && opt.lastChecked && (status === "FAILED" || !repo?.name))
+        return false;
       return true;
     }
   }
