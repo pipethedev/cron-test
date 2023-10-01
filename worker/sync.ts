@@ -1,4 +1,4 @@
-import axios from "axios";
+import axios, { AxiosError } from "axios";
 import {
   Project,
   PROJECT_STATUS,
@@ -8,18 +8,17 @@ import {
 } from "@brimble/models";
 import { prioritize, randomDelay, useRabbitMQ } from "../config";
 
+type IOpt = { lastChecked?: boolean };
+
 const done: string[] = [];
 const pr_done: string[] = [];
 
-export const keepInSync = async (opt: { lastChecked?: boolean } = {}) => {
+const processProject = async (opt: IOpt = {}) => {
   const projects = await Project.find().select([
     "port",
     "name",
     "status",
     "ip",
-    "server",
-    "passwordEnabled",
-    "domains",
     "repo",
   ]);
 
@@ -73,9 +72,11 @@ export const keepInSync = async (opt: { lastChecked?: boolean } = {}) => {
         await randomDelay(2000, 5000);
       }
     }
-    done.length = 0;
   }
+  done.length = 0;
+};
 
+const processPreview = async (opt: IOpt = {}) => {
   const previews = await Preview.find();
   for (const preview of previews) {
     const shouldStart = await starter(preview, opt);
@@ -98,8 +99,12 @@ export const keepInSync = async (opt: { lastChecked?: boolean } = {}) => {
         await randomDelay(2000, 5000);
       }
     }
-    pr_done.length = 0;
   }
+  pr_done.length = 0;
+};
+
+export const keepInSync = async (opt?: IOpt) => {
+  await Promise.all([processProject(opt), processPreview(opt)]);
 };
 
 const starter = async (
@@ -115,14 +120,25 @@ const starter = async (
 
     const urlString = `http://${ip}:${port}`;
 
-    await axios(urlString, { timeout: 60000 });
+    await axios(urlString, { timeout: 20000 });
     return false;
-  } catch (error: any) {
-    if (error.code === "ECONNABORTED" || error.code === "ETIMEDOUT") {
+  } catch (e) {
+    const err = e as AxiosError;
+    const error = err.toJSON() as AxiosError;
+
+    if (!opt.lastChecked) return true;
+
+    if (
+      !project &&
+      (status === "FAILED" ||
+        !repo?.name ||
+        error.message === "Missing ip or port" ||
+        error.status !== 404 ||
+        error.code === "ECONNABORTED" ||
+        error.code === "ETIMEDOUT")
+    ) {
       return false;
-    } else if (error.code === "ECONNREFUSED" || error.code === "ECONNRESET") {
-      if (!project && opt.lastChecked && (status === "FAILED" || !repo?.name))
-        return false;
+    } else {
       return true;
     }
   }
