@@ -133,7 +133,7 @@ const starter = async (
       (status === "FAILED" ||
         !repo?.name ||
         error.message === "Missing ip or port" ||
-        error.status !== 404 ||
+        error.status === 404 ||
         error.code === "ECONNABORTED" ||
         error.code === "ETIMEDOUT")
     ) {
