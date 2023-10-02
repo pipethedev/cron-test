@@ -120,7 +120,7 @@ const starter = async (
 
     const urlString = `http://${ip}:${port}`;
 
-    await axios(urlString, { timeout: 20000 });
+    await axios(urlString, { timeout: 30000 });
     return false;
   } catch (e) {
     const err = e as AxiosError;
