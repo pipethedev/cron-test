@@ -7,6 +7,7 @@ import {
   IPreview,
 } from "@brimble/models";
 import { prioritize, randomDelay, useRabbitMQ } from "../config";
+import { log } from "@brimble/utils";
 
 type IOpt = { lastChecked?: boolean };
 
@@ -59,6 +60,8 @@ const processProject = async (opt: IOpt = {}) => {
         );
         const priority = tops && tops.indexOf(project.name) + 1;
         done.push(project.name);
+
+        log.info(`Starting ${project.name} with status ${project.status}`);
 
         useRabbitMQ(
           "main",
@@ -120,13 +123,13 @@ const starter = async (
 
     const urlString = `http://${ip}:${port}`;
 
-    await axios(urlString, { timeout: 30000 });
+    await axios(urlString, { timeout: 60000 });
     return false;
   } catch (e) {
     const err = e as AxiosError;
     const error = err.toJSON() as AxiosError;
 
-    if (!opt.lastChecked) return true;
+    if (!opt.lastChecked && error.status !== 404) return true;
 
     if (
       !project &&
