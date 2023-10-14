@@ -43,14 +43,6 @@ export const useRabbitMQ = async (
   }
 };
 
-export const prioritize = [
-  "brimble-client",
-  "brimble-dashboard",
-  "webshots",
-  "klefdev",
-  "ileri",
-];
-
 export const randomDelay = async (min: number, max: number) => {
   // Generate a random delay between min and max milliseconds
   const delay = Math.random() * (max - min) + min;
