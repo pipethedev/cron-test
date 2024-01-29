@@ -39,7 +39,8 @@ export const useRabbitMQ = async (
       throw new Error("Invalid type");
     }
   } catch (err) {
-    console.error(err);
+    console.error("Failed to publish message:", err);
+    if (process.env.NODE_ENV === "production") process.exit(1);
   }
 };
 

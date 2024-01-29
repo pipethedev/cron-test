@@ -15,6 +15,7 @@ export class RabbitMQ {
 
     this.connection.on("error", (error) => {
       console.error(`A RabbitMQ connection error occurred: ${error}`);
+      if (process.env.NODE_ENV === "production") process.exit(1);
     });
   }
 
