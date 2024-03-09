@@ -1,6 +1,7 @@
-import { PROJECT_STATUS, Log } from "@brimble/models";
+import { PROJECT_STATUS, Log, Domain } from "@brimble/models";
 import cron from "node-cron";
 import { useRabbitMQ } from "../config";
+import axios from "axios";
 
 const processPendingLogs = async () => {
   const logs = await Log.find({
@@ -22,6 +23,32 @@ const processPendingLogs = async () => {
     }
   });
 };
+
+export const uptimeCron = cron.schedule(
+  "5 * * * *",
+  () => async () => {
+    const domains = await Domain.find({
+      name: { $regex: ".brimble.app" },
+      preview: { $exists: false },
+    })
+      .select("name project")
+      .populate({ path: "project", select: "isPaused" });
+
+    await Promise.all(
+      domains.map(async (domain) => {
+        const project = domain.project;
+        if (project && !project?.isPaused) {
+          const url = `https://${domain?.name}`;
+          await axios(url, {
+            headers: { "user-agent": "Uptime" },
+            timeout: 30000,
+          }).catch(() => {});
+        }
+      })
+    );
+  },
+  { scheduled: false }
+);
 
 export const pendingCron = cron.schedule(
   "* * * * *",
