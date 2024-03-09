@@ -25,8 +25,8 @@ const processPendingLogs = async () => {
 };
 
 export const uptimeCron = cron.schedule(
-  "5 * * * *",
-  () => async () => {
+  "*/10 * * * *",
+  async () => {
     const domains = await Domain.find({
       name: { $regex: ".brimble.app" },
       preview: { $exists: false },
