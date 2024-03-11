@@ -11,7 +11,7 @@
     "pm2": "pm2 start ecosystem.config.js --env production"
   },
   "dependencies": {
-    "@brimble/models": "^1.6.5",
+    "@brimble/models": "^1.7.1",
     "@brimble/utils": "^1.5.21",
     "amqplib": "^0.10.3",
     "axios": "^1.6.7",
