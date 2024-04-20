@@ -1,20 +1,6 @@
 import dotenv from "dotenv";
-import { Queue } from "bullmq";
-import { RedisClient } from "./redis/redis-client";
-import { container, delay } from "tsyringe";
 import { rabbitMQ } from "./rabbitmq";
 dotenv.config();
-
-export const redis = container.resolve(delay(() => RedisClient)).get();
-
-export const queue = (name: string) =>
-  new Queue(name, {
-    connection: redis.duplicate(),
-    defaultJobOptions: {
-      removeOnComplete: true,
-      removeOnFail: true,
-    },
-  });
 
 const connection = rabbitMQ;
 const connect = connection.connect();
@@ -42,10 +28,4 @@ export const useRabbitMQ = async (
     console.error("Failed to publish message:", err);
     if (process.env.NODE_ENV === "production") process.exit(1);
   }
-};
-
-export const randomDelay = async (min: number, max: number) => {
-  // Generate a random delay between min and max milliseconds
-  const delay = Math.random() * (max - min) + min;
-  await new Promise((resolve) => setTimeout(resolve, delay));
 };
