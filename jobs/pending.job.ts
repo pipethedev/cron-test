@@ -18,6 +18,7 @@ export const pending = cron.schedule(
         });
 
         if (!logs.length) {
+          console.log(`Force trigging deployment for ${log.name}`);
           return useRabbitMQ(
             "main",
             "send",
