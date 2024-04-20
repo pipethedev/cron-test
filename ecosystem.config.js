@@ -1,7 +1,7 @@
 module.exports = {
   apps: [
     {
-      name: "uptime",
+      name: "cron",
       script: "./dist/index.js",
       watch: "./dist",
       env_production: {
