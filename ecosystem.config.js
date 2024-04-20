@@ -9,6 +9,8 @@ module.exports = {
       },
       ignore: ["node_modules"],
       max_memory_restart: "1G",
+      exp_backoff_restart_delay: 1000,
+      kill_timeout: 60000,
     },
   ],
 };
