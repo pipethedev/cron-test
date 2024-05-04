@@ -4,7 +4,7 @@
   "main": "index.js",
   "license": "MIT",
   "scripts": {
-    "build": "rm -rf dist && tsc -p .",
+    "build": "tsc -p .",
     "start": "NODE_PATH=. node -r  ./dist/index.js",
     "dev": "nodemon ./index.ts",
     "pm2": "pm2 start ecosystem.config.js --env production"
