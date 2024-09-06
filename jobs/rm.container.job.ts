@@ -1,10 +1,9 @@
 import { Log, PROJECT_STATUS, Preview, Project } from "@brimble/models";
 import { useRabbitMQ } from "../config";
 import cron from "node-cron";
-import { subDays } from "date-fns";
 
 export const removeContainers = cron.schedule(
-  "0 0 * * *",
+  "0 */1 * * *",
   async () => {
     const projects = await Project.find().select("log");
     const previews = await Preview.find().select("log");
@@ -14,7 +13,6 @@ export const removeContainers = cron.schedule(
         $not: { $in: [PROJECT_STATUS.PENDING, PROJECT_STATUS.INPROGRESS] },
       },
       _id: { $not: { $in: logIds } },
-      createdAt: { $gt: subDays(new Date(), 2).toISOString() },
     })
       .select("name")
       .sort({ createdAt: -1 });
