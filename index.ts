@@ -11,6 +11,7 @@ jobs.uptime.start();
 jobs.pending.start();
 jobs.removeContainers.start();
 jobs.backup.start();
+jobs.deleteProjectsPermanently.start();
 
 process.on("SIGTERM", closeApp);
 process.on("SIGINT", closeApp);
@@ -22,6 +23,7 @@ function closeApp() {
   jobs.pending.stop();
   jobs.removeContainers.stop();
   jobs.backup.stop();
+  jobs.deleteProjectsPermanently.stop();
   rabbitMQ.close();
   closeMongo();
   process.exit(0);
