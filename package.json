@@ -9,7 +9,7 @@
   "private": false,
   "scripts": {
     "start": "node runner.js",
-    "build": "echo 'Build script here'"
+    "build": ""
   },
   "dependencies": {
     "dotenv": "^16.5.0",

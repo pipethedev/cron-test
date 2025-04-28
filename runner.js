@@ -27,10 +27,6 @@ const config = {
  * @returns {string} - Valid cron expression
  */
 function minutesToCronExpression(minutes) {
-    if (minutes < 1) {
-        throw new Error('Interval must be at least 1 minute');
-    }
-
     if (minutes < 60) {
         // For intervals less than an hour, run every X minutes
         return `*/${minutes} * * * *`;
