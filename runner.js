@@ -32,7 +32,6 @@ function minutesToCronExpression(minutes) {
     }
 }
 
-// The task to run on schedule
 function runTask() {
     const now = new Date();
     console.log(`[${now.toISOString()}] ${config.message}`);
