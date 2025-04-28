@@ -25,7 +25,6 @@ const config = {
  */
 function minutesToCronExpression(minutes) {
     if (minutes < 60) {
-        // For intervals less than an hour, run every X minutes
         return `*/${minutes} * * * *`;
     } else {
         // For longer intervals, this would need more complex logic
