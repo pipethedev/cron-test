@@ -1,0 +1,14 @@
+{
+  "name": "cron-test",
+  "version": "1.0.0",
+  "description": "Simple cron service",
+  "main": "index.js",
+  "repository": "https://github.com/pipethedev/cron-test",
+  "author": "Muritala David <davmuri1414@gmail.com>",
+  "license": "MIT",
+  "private": false,
+  "dependencies": {
+    "dotenv": "^16.5.0",
+    "node-cron": "^3.0.3"
+  }
+}
