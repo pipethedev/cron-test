@@ -13,11 +13,8 @@ require('dotenv').config();
 const cron = require('node-cron');
 
 
-// Configuration
 const config = {
     intervalMinutes: parseInt(process.env.CRON_INTERVAL_MINUTES || '5', 10),
-
-    // The message to log when the job runs
     message: 'Cron job executed successfully!'
 };
 
@@ -42,7 +39,6 @@ function runTask() {
     console.log(`[${now.toISOString()}] ${config.message}`);
 }
 
-// Set up the cron job
 try {
     const cronExpression = minutesToCronExpression(config.intervalMinutes);
     console.log(`Setting up cron job to run every ${config.intervalMinutes} minute(s)`);
@@ -51,8 +47,6 @@ try {
     cron.schedule(cronExpression, runTask);
 
     console.log('Cron job scheduled successfully!');
-
-    // Run once immediately to confirm it's working
     runTask();
 } catch (error) {
     console.error('Error setting up cron job:', error.message);
